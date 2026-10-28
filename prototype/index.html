@@ -6,7 +6,7 @@
 <title>Stickback</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600;700&display=swap">
 <style>
 /* Layout: phone column = views (feed with vertical snap / profile scroll) + bottom tab bar */
 :root{
@@ -72,16 +72,14 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,label:focus-visi
 .win{display:inline-flex;align-items:center;gap:4px;color:var(--accent);font-weight:700;font-size:12px;white-space:nowrap}
 .pick{display:inline-flex;align-items:center;gap:4px;border:1px dashed var(--accent);color:var(--accent);border-radius:99px;padding:5px 10px;font-size:12px;font-weight:600;white-space:nowrap}
 
-/* sticker reply: die-cut sticker + caption label */
+/* sticker reply: your text on top, the sticker below, kept separate (nothing printed on the image) */
 .meme{width:100%;aspect-ratio:1;border-radius:16px;position:relative;overflow:hidden;container-type:inline-size;
-  display:grid;place-items:center;background:radial-gradient(circle at 50% 38%,rgba(255,255,255,.3),transparent 60%),var(--m)}
-.sticker{font-size:44cqi;line-height:1;transform:translateY(-12%) rotate(var(--r));
-  filter:drop-shadow(2.4cqi 0 0 #fff) drop-shadow(-2.4cqi 0 0 #fff) drop-shadow(0 2.4cqi 0 #fff) drop-shadow(0 -2.4cqi 0 #fff) drop-shadow(0 3cqi 4cqi rgba(0,0,0,.35))}
-img.sticker{width:58cqi;height:58cqi;object-fit:contain;display:block}
-.caption{position:absolute;left:7%;right:7%;bottom:8%;text-align:center;transform:rotate(calc(var(--r) * -.5))}
-.caption span{background:#111;color:#fff;font-family:var(--meme);text-transform:uppercase;font-size:7.6cqi;line-height:1.55;
-  padding:.12em .45em;-webkit-box-decoration-break:clone;box-decoration-break:clone;letter-spacing:.01em}
-.caption.ph span{color:#888}
+  display:flex;flex-direction:column;gap:3cqi;padding:6cqi 6cqi 5cqi;background:var(--surface);border:1px solid var(--line)}
+.caption{margin:0;font:600 6.6cqi/1.3 var(--body);color:var(--fg);text-wrap:pretty;overflow-wrap:anywhere}
+.caption.ph{color:var(--muted)}
+.stk{position:relative;flex:1;min-height:0;display:grid;place-items:center}
+.sticker{font-size:40cqi;line-height:1;transform:rotate(var(--r));filter:drop-shadow(0 2cqi 3cqi rgba(0,0,0,.35))}
+img.sticker{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block}
 
 .empty{flex:0 0 auto;width:min(78cqw,100cqh - 50px);aspect-ratio:1;border:2px dashed var(--line);border-radius:16px;display:grid;place-items:center;
   text-align:center;color:var(--muted);padding:24px;font-size:14px;line-height:1.45}
@@ -210,7 +208,7 @@ img.sticker{width:58cqi;height:58cqi;object-fit:contain;display:block}
       <div class="sheet-head"><h3>Rispondi con uno sticker</h3><button class="ghost" data-close>Annulla</button></div>
       <p class="sheet-sub" id="replyTo"></p>
       <div class="preview" id="preview"></div>
-      <div class="field"><label for="cap">La tua didascalia</label><input id="cap" maxlength="50" autocomplete="off" placeholder="Es. io dopo aver letto questo"></div>
+      <div class="field"><label for="cap">Il tuo testo</label><input id="cap" maxlength="50" autocomplete="off" placeholder="Es. io dopo aver letto questo"></div>
       <div class="pickrow"><span class="lab">I tuoi sticker</span><div class="chips" id="stickers"></div>
         <p class="small">Tocca + per caricarli dalla galleria, oppure incolla qui uno sticker copiato da WhatsApp.</p></div>
       <button class="primary" id="sendMeme" disabled>Pubblica</button>
@@ -248,7 +246,7 @@ const ME='tu';
 let uid=1000;
 const E=v=>({type:'emoji',v});
 const S=(author,stars,emoji,caption)=>({id:++uid,author,stars,starred:false,sticker:E(emoji),caption});
-const rot=id=>((id*7)%9-4)*2.5+'deg';
+const rot=id=>((id*7)%9-4)*1.2+'deg';
 const bgOf=id=>BGS[(id*5)%BGS.length];
 
 /* the viewer's saved stickers (example set; uploads get added here) */
@@ -299,8 +297,8 @@ const initial=u=>esc(nameOf(u)[0].toUpperCase());
 
 function stickerEl(st){return st.type==='img'?`<img class="sticker" src="${st.v}" alt="">`:`<span class="sticker">${st.v}</span>`}
 function stickerCard(m,ph){
-  return `<div class="meme" style="--m:${bgOf(m.id)};--r:${rot(m.id)}">${stickerEl(m.sticker)}
-    <div class="caption${ph?' ph':''}"><span>${esc(m.caption)}</span></div></div>`;
+  return `<div class="meme" style="--r:${rot(m.id)}"><p class="caption${ph?' ph':''}">${esc(m.caption)}</p>
+    <div class="stk">${stickerEl(m.sticker)}</div></div>`;
 }
 function tileInner(st){return st.type==='img'?`<img src="${st.v}" alt="">`:st.v}
 function starBtn(on,n,label,big){
@@ -475,7 +473,7 @@ function renderChips(){
 function syncCreator(){
   const cap=$('#cap').value.trim();
   document.querySelectorAll('[data-si]').forEach(b=>b.classList.toggle('on',myStickers[b.dataset.si]===draftSticker));
-  $('#preview').innerHTML=stickerCard({id:previewId,sticker:draftSticker,caption:cap||'la tua didascalia'},!cap);
+  $('#preview').innerHTML=stickerCard({id:previewId,sticker:draftSticker,caption:cap||'Il tuo testo appare qui, sopra lo sticker'},!cap);
   $('#sendMeme').disabled=!cap;
 }
 function openMeme(p){replyP=p;previewId=++uid;if(!myStickers.includes(draftSticker))draftSticker=myStickers[0];

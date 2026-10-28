@@ -10,7 +10,7 @@ Il nome unisce *sticker* e *clapback*, cioè la risposta pronta e ironica.
 
 - **Feed verticale**: scorri in giù per passare da un problema all'altro, come su TikTok o Reels.
 - **Risposte in orizzontale**: scorri di lato per vedere gli sticker di risposta, uno per schermata.
-- **Rispondi con i tuoi sticker**: scegli uno sticker dalla tua raccolta e scrivi una didascalia.
+- **Rispondi con i tuoi sticker**: scrivi il tuo testo e scegli uno sticker dalla tua raccolta. Il testo sta sopra, come un messaggio, e lo sticker sotto: restano separati, il testo non viene stampato sull'immagine.
 - **Stelle**: metti una stella sia al problema sia alle singole risposte. Doppio tap su uno sticker per mettere la stella al volo.
 - **Corona**: l'autore del problema sceglie la risposta migliore, che va in cima.
 - **Profilo**: nome, bio, statistiche (problemi, risposte, stelle, corone) e tre schede: i tuoi problemi, le tue risposte, i tuoi sticker.
@@ -23,7 +23,7 @@ Per provarlo online puoi attivare GitHub Pages (Settings → Pages → branch `m
 
 Nel prototipo:
 - i dati sono di esempio e restano solo in memoria (si azzerano ricaricando la pagina);
-- gli sticker di esempio sono emoji; con **+** puoi caricare immagini vere, e i PNG/WEBP trasparenti ricevono il bordo bianco tipo sticker;
+- gli sticker di esempio sono emoji; con **+** puoi caricare immagini vere (meglio PNG o WEBP con sfondo trasparente, come gli sticker di WhatsApp);
 - puoi incollare uno sticker copiato (Ctrl/Cmd+V) mentre l'app è aperta;
 - quando posti un problema arrivano due risposte simulate, per vedere le notifiche.
 
