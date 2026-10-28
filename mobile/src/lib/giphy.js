@@ -1,4 +1,5 @@
 import { GIPHY_KEY } from "../config.js";
+import { lang } from "../i18n/index.js";
 
 export class GiphyError extends Error {
   constructor(code) {
@@ -10,7 +11,7 @@ export class GiphyError extends Error {
 // kind: "stickers" | "gifs". Empty query → trending.
 export async function searchGiphy({ kind, query, signal }) {
   const q = query.trim();
-  const params = new URLSearchParams({ api_key: GIPHY_KEY, limit: "30", rating: "pg-13", lang: "it" });
+  const params = new URLSearchParams({ api_key: GIPHY_KEY, limit: "30", rating: "pg-13", lang: lang() });
   if (q) params.set("q", q);
   let res;
   try {

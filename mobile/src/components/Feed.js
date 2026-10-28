@@ -5,6 +5,7 @@ import { C, F } from "../theme.js";
 import { Avatar, SaveIcon, StarButton, StickerCard } from "./ui.js";
 import { CategoryBadge } from "./Social.js";
 import { categoryLabel } from "../lib/api.js";
+import { t } from "../i18n/index.js";
 
 const GAP = 12;
 const SIDE = 20;
@@ -63,7 +64,7 @@ function ProblemScreen({ me, p, first, height, width, users, dispatch, onReply, 
     const saved = savedSet.has(m.sticker.v);
     return (
       <View style={{ width: cardW, gap: 9 }}>
-        <Pressable onPress={() => doubleTap(m)} accessibilityHint="Tocca due volte per mettere la stella">
+        <Pressable onPress={() => doubleTap(m)} accessibilityHint={t("feed.doubleTap")}>
           <StickerCard meme={m} size={cardW} />
         </Pressable>
         <View style={st.meta}>
@@ -72,16 +73,16 @@ function ProblemScreen({ me, p, first, height, width, users, dispatch, onReply, 
           </Pressable>
           {m.author !== me && (
             <Pressable onPress={() => onToggleSave(m.sticker)} hitSlop={6}
-              accessibilityLabel={saved ? "Togli dai tuoi sticker" : "Salva nei tuoi sticker"}
+              accessibilityLabel={saved ? t("feed.unsave") : t("feed.save")}
               style={[st.save, saved && { backgroundColor: C.fg, borderColor: C.fg }]}>
               <SaveIcon saved={saved} color={saved ? C.bg : C.muted} />
             </Pressable>
           )}
           <Pressable style={st.moreSmall} hitSlop={8} onPress={() => onMore({ kind: "reply", id: m.id, pid: p.id, author: m.author })}
-            accessibilityLabel="Altre azioni sulla risposta">
+            accessibilityLabel={t("feed.replyMore")}>
             <Text style={st.moreTxt}>⋯</Text>
           </Pressable>
-          <StarButton on={m.starred} count={m.stars} label="Mi piace questa risposta"
+          <StarButton on={m.starred} count={m.stars} label={t("feed.likeReply")}
             onToggle={() => dispatch({ type: "starReply", pid: p.id, mid: m.id })} />
         </View>
       </View>
@@ -98,15 +99,15 @@ function ProblemScreen({ me, p, first, height, width, users, dispatch, onReply, 
           </Pressable>
           <Text style={st.muted}>· {p.time}</Text>
           {p.category && p.category !== "altro" && <CategoryBadge label={categoryLabel(p.category)} />}
-          {mine && <View style={st.yours}><Text style={st.yoursTxt}>Il tuo problema</Text></View>}
+          {mine && <View style={st.yours}><Text style={st.yoursTxt}>{t("feed.yours")}</Text></View>}
           <Pressable style={st.more} hitSlop={10} onPress={() => onMore({ kind: "problem", id: p.id, author: p.author })}
-            accessibilityLabel="Altre azioni sul problema">
+            accessibilityLabel={t("feed.problemMore")}>
             <Text style={st.moreTxt}>⋯</Text>
           </Pressable>
         </View>
         <View style={st.prow}>
           <Text style={st.ptext}>{p.text}</Text>
-          <StarButton big on={p.starred} count={p.stars} label="Mi piace questo problema"
+          <StarButton big on={p.starred} count={p.stars} label={t("feed.likeProblem")}
             onToggle={() => dispatch({ type: "starProblem", pid: p.id })} />
         </View>
       </View>
@@ -132,8 +133,8 @@ function ProblemScreen({ me, p, first, height, width, users, dispatch, onReply, 
           />
         ) : (
           <View style={[st.empty, { width: cardW, height: cardW, marginLeft: SIDE }]}>
-            <Text style={st.emptyTitle}>Ancora nessuna risposta</Text>
-            <Text style={st.emptyTxt}>Gli sticker arriveranno qui. Ti avvisiamo appena qualcuno risponde.</Text>
+            <Text style={st.emptyTitle}>{t("feed.noReplies")}</Text>
+            <Text style={st.emptyTxt}>{t("feed.noRepliesBody")}</Text>
           </View>
         ))}
       </View>
@@ -141,10 +142,10 @@ function ProblemScreen({ me, p, first, height, width, users, dispatch, onReply, 
       <View style={st.actions}>
         <View style={{ flex: 1 }} />
         <Pressable style={({ pressed }) => [st.reply, pressed && { opacity: 0.85 }]} onPress={() => onReply(p.id)}>
-          <Text style={st.replyTxt}>Rispondi</Text>
+          <Text style={st.replyTxt}>{t("feed.reply")}</Text>
         </Pressable>
       </View>
-      {first && <Text style={st.hint}>↓ Scorri giù per il prossimo problema · di lato per le risposte</Text>}
+      {first && <Text style={st.hint}>{t("feed.swipeHint")}</Text>}
     </View>
   );
 }

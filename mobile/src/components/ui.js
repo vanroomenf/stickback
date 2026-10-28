@@ -3,6 +3,7 @@ import {
   Animated, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View,
 } from "react-native";
 import { Image } from "expo-image";
+import { t } from "../i18n/index.js";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 import { C, F } from "../theme.js";
@@ -105,11 +106,11 @@ export function Sheet({ visible, title, onClose, children }) {
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={s.backdrop}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Chiudi" />
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel={t("close")} />
         <View style={[s.sheet, { paddingBottom: Math.max(insets.bottom, 16) + 6 }]}>
           <View style={s.sheetHead}>
             <Text style={s.sheetTitle}>{title}</Text>
-            <Pressable onPress={onClose} hitSlop={10}><Text style={s.ghost}>Annulla</Text></Pressable>
+            <Pressable onPress={onClose} hitSlop={10}><Text style={s.ghost}>{t("cancel")}</Text></Pressable>
           </View>
           <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ gap: 14, paddingBottom: 4 }}>
             {children}

@@ -2,21 +2,24 @@
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { REPORT_REASONS } from "../lib/api.js";
-import { MIN_AGE, PRIVACY_URL, RULES_URL, ageFrom } from "../lib/util.js";
+import { reportReasons } from "../lib/api.js";
+import { MIN_AGE, ageFrom } from "../lib/util.js";
+import { LANGUAGES, chosenLanguage, helplines, privacyUrl, rulesUrl, setLanguage, t } from "../i18n/index.js";
 import { C, F } from "../theme.js";
 import { Primary, Sheet } from "./ui.js";
 
 const open = (url) => Linking.openURL(url).catch(() => {});
 
-// "Ho letto e accetto le Regole e la Privacy" with tappable links
+// "I have read and accept the rules and the privacy policy", with the two links tappable
 export function RulesCheckbox({ checked, onToggle }) {
   return (
     <Pressable style={st.check} onPress={onToggle} accessibilityRole="checkbox" accessibilityState={{ checked }}>
       <View style={[st.box, checked && st.boxOn]}>{checked && <Text style={st.tick}>✓</Text>}</View>
       <Text style={st.checkTxt}>
-        Ho letto e accetto le <Text style={st.link} onPress={() => open(RULES_URL)}>regole della community</Text> e
-        l'<Text style={st.link} onPress={() => open(PRIVACY_URL)}>informativa sulla privacy</Text>.
+        {t("rules.accept").split(/(\{rules\}|\{privacy\})/).map((part, i) =>
+          part === "{rules}" ? <Text key={i} style={st.link} onPress={() => open(rulesUrl())}>{t("rules.rules")}</Text>
+          : part === "{privacy}" ? <Text key={i} style={st.link} onPress={() => open(privacyUrl())}>{t("rules.privacy")}</Text>
+          : part)}
       </Text>
     </Pressable>
   );
@@ -32,10 +35,10 @@ export function BirthDateField({ value, onChange }) {
   };
   return (
     <View style={{ gap: 6 }}>
-      <Text style={st.lab}>DATA DI NASCITA</Text>
-      <TextInput value={value} onChangeText={(t) => onChange(format(t))} placeholder="GG/MM/AAAA" placeholderTextColor={C.muted}
+      <Text style={st.lab}>{t("birth.label")}</Text>
+      <TextInput value={value} onChangeText={(t) => onChange(format(t))} placeholder={t("birth.ph")} placeholderTextColor={C.muted}
         keyboardType="number-pad" maxLength={10} style={st.input} />
-      {bad && <Text style={st.errTxt}>Questa data non esiste. Scrivila come 28/10/2008.</Text>}
+      {bad && <Text style={st.errTxt}>{t("birth.bad")}</Text>}
     </View>
   );
 }
@@ -60,25 +63,25 @@ export function TermsGate({ banned, onAccept, onSignOut }) {
       <Text style={st.logo}>Stick<Text style={{ color: C.accent }}>back</Text></Text>
       {banned ? (
         <>
-          <Text style={st.gateTitle}>Il tuo account è sospeso</Text>
-          <Text style={st.body}>Un moderatore ha sospeso il tuo account perché ha violato le regole della community. Non puoi più pubblicare né rispondere.</Text>
-          <Text style={st.link} onPress={() => open(RULES_URL)}>Leggi le regole della community</Text>
+          <Text style={st.gateTitle}>{t("gate.bannedTitle")}</Text>
+          <Text style={st.body}>{t("gate.bannedBody")}</Text>
+          <Text style={st.link} onPress={() => open(rulesUrl())}>{t("gate.readRules")}</Text>
         </>
       ) : tooYoung ? (
         <>
-          <Text style={st.gateTitle}>Stickback è per chi ha almeno {MIN_AGE} anni</Text>
-          <Text style={st.body}>Per ora non puoi usare l'app. Ti aspettiamo quando avrai {MIN_AGE} anni!</Text>
+          <Text style={st.gateTitle}>{t("gate.tooYoungTitle", { age: MIN_AGE })}</Text>
+          <Text style={st.body}>{t("gate.tooYoungBody", { age: MIN_AGE })}</Text>
         </>
       ) : (
         <>
-          <Text style={st.gateTitle}>Prima di iniziare</Text>
-          <Text style={st.body}>Stickback è per chi ha almeno {MIN_AGE} anni. Ti chiediamo la data di nascita solo per controllarlo: non la salviamo.</Text>
+          <Text style={st.gateTitle}>{t("gate.title")}</Text>
+          <Text style={st.body}>{t("gate.body", { age: MIN_AGE })}</Text>
           <BirthDateField value={birth} onChange={setBirth} />
           <RulesCheckbox checked={ok} onToggle={() => setOk(!ok)} />
-          <Primary label={busy ? "Un attimo…" : "Continua"} disabled={age === null || !ok || busy} onPress={go} />
+          <Primary label={busy ? t("wait") : t("gate.continue")} disabled={age === null || !ok || busy} onPress={go} />
         </>
       )}
-      <Pressable onPress={onSignOut} style={{ alignSelf: "center", padding: 8 }}><Text style={st.muted}>Esci</Text></Pressable>
+      <Pressable onPress={onSignOut} style={{ alignSelf: "center", padding: 8 }}><Text style={st.muted}>{t("signOut")}</Text></Pressable>
     </ScrollView>
   );
 }
@@ -87,16 +90,16 @@ export function TermsGate({ banned, onAccept, onSignOut }) {
 export function MoreSheet({ target, me, onClose, onReport, onBlock, onDelete }) {
   if (!target) return <Sheet visible={false} title="" onClose={onClose} />;
   const mine = target.author === me;
-  const title = target.kind === "problem" ? "Problema" : target.kind === "reply" ? "Risposta" : `@${target.author}`;
+  const title = target.kind === "problem" ? t("more.problem") : target.kind === "reply" ? t("more.reply") : `@${target.author}`;
   return (
     <Sheet visible title={title} onClose={onClose}>
       {mine ? (
-        <Row label={target.kind === "problem" ? "Elimina il problema" : "Elimina la risposta"} hint="Sparisce per tutti. Non si può annullare." danger onPress={onDelete} />
+        <Row label={target.kind === "problem" ? t("more.deleteProblem") : t("more.deleteReply")} hint={t("more.deleteHint")} danger onPress={onDelete} />
       ) : (
         <>
-          {target.kind !== "user" && <Row label={target.kind === "problem" ? "Segnala il problema" : "Segnala la risposta"} hint="Un moderatore la controlla. L'autore non saprà chi l'ha segnalata." onPress={onReport} />}
-          {target.kind === "user" && <Row label="Segnala il profilo" hint="Per nome utente, bio o comportamento." onPress={onReport} />}
-          <Row label={`Blocca @${target.author}`} hint="Non vedrete più i contenuti l'uno dell'altro e non potrà risponderti." danger onPress={onBlock} />
+          {target.kind !== "user" && <Row label={target.kind === "problem" ? t("more.reportProblem") : t("more.reportReply")} hint={t("more.reportHint")} onPress={onReport} />}
+          {target.kind === "user" && <Row label={t("more.reportUser")} hint={t("more.reportUserHint")} onPress={onReport} />}
+          <Row label={t("more.block", { user: target.author })} hint={t("more.blockHint")} danger onPress={onBlock} />
         </>
       )}
     </Sheet>
@@ -119,9 +122,9 @@ export function ReportSheet({ target, onClose, onSend }) {
   useEffect(() => { setReason(null); setDetails(""); }, [target]);
   const send = async () => { setBusy(true); try { await onSend(reason, details); } finally { setBusy(false); } };
   return (
-    <Sheet visible={!!target} title="Perché lo segnali?" onClose={onClose}>
-      <Text style={st.body}>La segnalazione è anonima. Un moderatore la controlla, di solito entro 24 ore.</Text>
-      {REPORT_REASONS.map(([k, l, h]) => (
+    <Sheet visible={!!target} title={t("report.title")} onClose={onClose}>
+      <Text style={st.body}>{t("report.body")}</Text>
+      {reportReasons().map(([k, l, h]) => (
         <Pressable key={k} style={[st.reason, reason === k && st.reasonOn]} onPress={() => setReason(k)} accessibilityRole="radio" accessibilityState={{ selected: reason === k }}>
           <Text style={st.rowTxt}>{l}</Text>
           <Text style={st.rowHint}>{h}</Text>
@@ -129,15 +132,14 @@ export function ReportSheet({ target, onClose, onSend }) {
       ))}
       {reason === "autolesionismo" && (
         <View style={st.help}>
-          <Text style={st.helpTitle}>Se qualcuno è in pericolo adesso, chiama il 112.</Text>
-          <Text style={st.body}>Se sei tu a stare male, puoi parlarne subito: in Svizzera chiama il 143 (Telefono Amico) o il 147 (per i giovani); in Italia il Telefono Amico allo 02 2327 2327.</Text>
+          <HelpNumbers />
         </View>
       )}
       {reason && (
-        <TextInput value={details} onChangeText={setDetails} maxLength={300} multiline placeholder="Vuoi aggiungere qualcosa? (facoltativo)"
+        <TextInput value={details} onChangeText={setDetails} maxLength={300} multiline placeholder={t("report.details")}
           placeholderTextColor={C.muted} style={[st.input, { minHeight: 64, textAlignVertical: "top" }]} />
       )}
-      <Primary label={busy ? "Invio…" : "Invia segnalazione"} disabled={!reason || busy} onPress={send} />
+      <Primary label={busy ? t("report.sending") : t("report.send")} disabled={!reason || busy} onPress={send} />
     </Sheet>
   );
 }
@@ -149,14 +151,37 @@ export function ConfirmSheet({ visible, title, text, confirm, danger, onClose, o
     <Sheet visible={visible} title={title} onClose={onClose}>
       <Text style={st.body}>{text}</Text>
       <Pressable style={[st.danger, !danger && { backgroundColor: C.accent }, busy && { opacity: 0.5 }]} onPress={go} disabled={busy}>
-        <Text style={[st.dangerTxt, !danger && { color: C.accentInk }]}>{busy ? "Un attimo…" : confirm}</Text>
+        <Text style={[st.dangerTxt, !danger && { color: C.accentInk }]}>{busy ? t("wait") : confirm}</Text>
       </Pressable>
     </Sheet>
   );
 }
 
+// Local helplines for the phone's country; findahelpline.com when we don't know the country
+function HelpNumbers() {
+  const { emergency, lines } = helplines();
+  return (
+    <>
+      <Text style={st.helpTitle}>{t("help.emergency", { number: emergency })}</Text>
+      {lines.length ? (
+        <>
+          <Text style={st.body}>{t("help.intro")}</Text>
+          {lines.map((l) => (
+            <Text key={l.number} style={st.helpLine} onPress={() => open(`tel:${l.number.replace(/\s/g, "")}`)}>
+              <Text style={{ fontFamily: F.bold }}>{l.number}</Text> · {l.name}{l.youth ? ` (${t("help.youth")})` : ""}
+            </Text>
+          ))}
+        </>
+      ) : (
+        <Text style={[st.body, st.link]} onPress={() => open("https://findahelpline.com")}>{t("help.fallback")}</Text>
+      )}
+    </>
+  );
+}
+
 export function SettingsSheet({ visible, loadBlocked, onUnblock, onDeleteAccount, onSignOut, onClose }) {
   const [blocked, setBlocked] = useState(null);
+  const chosen = chosenLanguage();
   const [confirmDelete, setConfirmDelete] = useState(false);
   useEffect(() => {
     if (!visible) return;
@@ -166,27 +191,37 @@ export function SettingsSheet({ visible, loadBlocked, onUnblock, onDeleteAccount
 
   return (
     <>
-      <Sheet visible={visible && !confirmDelete} title="Impostazioni" onClose={onClose}>
-        <Text style={st.lab}>UTENTI BLOCCATI</Text>
+      <Sheet visible={visible && !confirmDelete} title={t("settings.title")} onClose={onClose}>
+        <Text style={st.lab}>{t("settings.language")}</Text>
+        <View style={st.langs}>
+          {[[null, t("settings.auto")], ...LANGUAGES].map(([code, label]) => (
+            <Pressable key={label} onPress={() => setLanguage(code)} style={[st.lang, chosen === code && st.langOn]}
+              accessibilityRole="radio" accessibilityState={{ selected: chosen === code }}>
+              <Text style={[st.langTxt, chosen === code && { color: C.bg }]}>{label}</Text>
+            </Pressable>
+          ))}
+        </View>
+
+        <Text style={[st.lab, { marginTop: 8 }]}>{t("settings.blocked")}</Text>
         {blocked === null ? <ActivityIndicator color={C.accent} /> : blocked.length ? blocked.map((b) => (
           <View key={b.id} style={st.blockedRow}>
             <Text style={[st.rowTxt, { flex: 1 }]} numberOfLines={1}>@{b.username}</Text>
             <Pressable style={st.smallBtn} onPress={async () => { await onUnblock(b); setBlocked((l) => l.filter((x) => x.id !== b.id)); }}>
-              <Text style={st.smallBtnTxt}>Sblocca</Text>
+              <Text style={st.smallBtnTxt}>{t("settings.unblock")}</Text>
             </Pressable>
           </View>
-        )) : <Text style={st.muted}>Non hai bloccato nessuno.</Text>}
+        )) : <Text style={st.muted}>{t("settings.noneBlocked")}</Text>}
 
-        <Text style={[st.lab, { marginTop: 8 }]}>INFORMAZIONI</Text>
-        <Row label="Regole della community" onPress={() => open(RULES_URL)} />
-        <Row label="Informativa sulla privacy" onPress={() => open(PRIVACY_URL)} />
+        <Text style={[st.lab, { marginTop: 8 }]}>{t("settings.info")}</Text>
+        <Row label={t("settings.rules")} onPress={() => open(rulesUrl())} />
+        <Row label={t("settings.privacy")} onPress={() => open(privacyUrl())} />
 
-        <Text style={[st.lab, { marginTop: 8 }]}>ACCOUNT</Text>
-        <Row label="Esci" onPress={onSignOut} />
-        <Row label="Elimina account" hint="Cancella per sempre profilo, problemi, risposte, stelle e sticker." danger onPress={() => setConfirmDelete(true)} />
+        <Text style={[st.lab, { marginTop: 8 }]}>{t("settings.account")}</Text>
+        <Row label={t("signOut")} onPress={onSignOut} />
+        <Row label={t("settings.deleteAccount")} hint={t("settings.deleteAccountHint")} danger onPress={() => setConfirmDelete(true)} />
       </Sheet>
-      <ConfirmSheet visible={visible && confirmDelete} title="Eliminare l'account?" danger confirm="Elimina per sempre"
-        text="Cancelliamo il tuo profilo, i tuoi problemi, le risposte, le stelle e gli sticker che hai caricato. Non si può annullare."
+      <ConfirmSheet visible={visible && confirmDelete} title={t("settings.deleteTitle")} danger confirm={t("settings.deleteConfirm")}
+        text={t("settings.deleteText")}
         onClose={() => setConfirmDelete(false)} onConfirm={onDeleteAccount} />
     </>
   );
@@ -214,6 +249,11 @@ const st = StyleSheet.create({
   reasonOn: { borderColor: C.accent },
   help: { backgroundColor: "#3a2a12", borderRadius: 12, padding: 14, gap: 6 },
   helpTitle: { color: C.fg, fontFamily: F.bold, fontSize: 14 },
+  helpLine: { color: C.fg, fontFamily: F.body, fontSize: 14, lineHeight: 21 },
+  langs: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  lang: { borderWidth: 1, borderColor: C.line, borderRadius: 99, paddingVertical: 7, paddingHorizontal: 13, backgroundColor: C.bg },
+  langOn: { backgroundColor: C.fg, borderColor: C.fg },
+  langTxt: { color: C.fg, fontFamily: F.semi, fontSize: 13 },
   danger: { backgroundColor: "#c92a3a", borderRadius: 14, paddingVertical: 14, alignItems: "center" },
   dangerTxt: { color: "#fff", fontFamily: F.bold, fontSize: 15 },
   blockedRow: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: C.bg, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 14 },

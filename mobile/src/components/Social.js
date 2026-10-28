@@ -1,6 +1,7 @@
 // Feed header: logo and the category filter
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { CATEGORIES } from "../lib/api.js";
+import { categories } from "../lib/api.js";
+import { t } from "../i18n/index.js";
 import { C, F } from "../theme.js";
 
 export const TOPBAR_HEIGHT = 84;
@@ -12,7 +13,7 @@ export function FeedHeader({ topInset, category, onCategory }) {
         <Text style={st.logo}>Stick<Text style={{ color: C.accent }}>back</Text></Text>
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={st.chips}>
-        {[[null, "Tutte"], ...CATEGORIES].map(([k, l]) => (
+        {[[null, t("cat.all")], ...categories()].map(([k, l]) => (
           <Pressable key={l} onPress={() => onCategory(k)} style={[st.chip, category === k && st.chipOn]}
             accessibilityRole="button" accessibilityState={{ selected: category === k }}>
             <Text style={[st.chipTxt, category === k && st.chipTxtOn]}>{l}</Text>

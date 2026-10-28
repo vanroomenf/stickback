@@ -1,17 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { searchGiphy } from "../lib/giphy.js";
-import { CATEGORIES } from "../lib/api.js";
+import { categories } from "../lib/api.js";
+import { t } from "../i18n/index.js";
 import { nextId } from "../lib/util.js";
 import { C, F } from "../theme.js";
 import { Primary, Sheet, StickerCard, StickerImage } from "./ui.js";
 
-const SOURCES = [["mine", "I miei"], ["stickers", "Sticker GIPHY"], ["gifs", "GIF"]];
-const MESSAGES = {
-  badkey: "La chiave GIPHY dell'app non funziona.",
-  ratelimit: "Troppe ricerche in poco tempo. Riprova tra un minuto.",
-  network: "GIPHY non risponde. Controlla la connessione e riprova.",
-};
+const SOURCES = ["mine", "stickers", "gifs"];
+const GIPHY_ERRORS = ["badkey", "ratelimit", "network"];
 
 function GiphyPicker({ kind, selected, onSelect, cell }) {
   const [query, setQuery] = useState("");
@@ -34,14 +31,14 @@ function GiphyPicker({ kind, selected, onSelect, cell }) {
 
   const q = debounced.trim();
   let body;
-  if (state.status === "loading" && !state.items.length) body = <Text style={st.gmsg}>Carico…</Text>;
-  else if (MESSAGES[state.status]) body = <Text style={st.gmsg}>{MESSAGES[state.status]}</Text>;
-  else if (!state.items.length) body = <Text style={st.gmsg}>{q ? `Nessun risultato per «${q}». Prova con un'altra parola.` : "Nessun risultato."}</Text>;
+  if (state.status === "loading" && !state.items.length) body = <Text style={st.gmsg}>{t("giphy.loading")}</Text>;
+  else if (GIPHY_ERRORS.includes(state.status)) body = <Text style={st.gmsg}>{t(`giphy.${state.status}`)}</Text>;
+  else if (!state.items.length) body = <Text style={st.gmsg}>{q ? t("giphy.noResultsFor", { q }) : t("giphy.noResults")}</Text>;
   else body = (
     <ScrollView style={{ maxHeight: cell * 3.4 }} nestedScrollEnabled keyboardShouldPersistTaps="handled">
       <View style={st.grid}>
         {state.items.map((g) => (
-          <Pressable key={g.id} onPress={() => onSelect(g)} accessibilityLabel={g.title || "Risultato GIPHY"}
+          <Pressable key={g.id} onPress={() => onSelect(g)} accessibilityLabel={g.title || t("giphy.result")}
             style={[st.gitem, { width: cell, height: cell, padding: kind === "gifs" ? 0 : cell * 0.12 }, selected?.v === g.v && st.on]}>
             <StickerImage sticker={g} thumb style={{ width: "100%", height: "100%" }} />
           </Pressable>
@@ -52,7 +49,7 @@ function GiphyPicker({ kind, selected, onSelect, cell }) {
 
   return (
     <View style={{ gap: 10 }}>
-      <TextInput value={query} onChangeText={setQuery} placeholder={kind === "gifs" ? "Cerca una GIF" : "Cerca uno sticker"}
+      <TextInput value={query} onChangeText={setQuery} placeholder={kind === "gifs" ? t("giphy.searchGif") : t("giphy.searchSticker")}
         placeholderTextColor={C.muted} style={st.input} autoCorrect={false} returnKeyType="search" />
       {body}
       <Text style={st.attrib}>POWERED BY GIPHY</Text>
@@ -79,22 +76,22 @@ export function ReplySheet({ visible, problem, myStickers, lastAdded, onClose, o
   const publish = () => { if (text && current) onPublish({ id: previewId, sticker: current, caption: text }); };
 
   return (
-    <Sheet visible={visible} title="Rispondi" onClose={onClose}>
-      {problem && <Text style={st.sub} numberOfLines={2}>a: {problem.text}</Text>}
+    <Sheet visible={visible} title={t("reply.title")} onClose={onClose}>
+      {problem && <Text style={st.sub} numberOfLines={2}>{t("reply.to", { text: problem.text })}</Text>}
       {current && (
         <View style={{ alignSelf: "center" }}>
           <StickerCard size={Math.min(inner * 0.44, 170)} placeholder={!text}
-            meme={{ id: previewId, sticker: current, caption: text || "Il tuo testo appare qui, sopra lo sticker" }} />
+            meme={{ id: previewId, sticker: current, caption: text || t("reply.preview") }} />
         </View>
       )}
       <View style={{ gap: 6 }}>
-        <Text style={st.lab}>IL TUO TESTO</Text>
-        <TextInput value={caption} onChangeText={setCaption} maxLength={50} placeholder="Es. io dopo aver letto questo"
+        <Text style={st.lab}>{t("reply.yourText")}</Text>
+        <TextInput value={caption} onChangeText={setCaption} maxLength={50} placeholder={t("reply.ph")}
           placeholderTextColor={C.muted} style={st.input} returnKeyType="send" onSubmitEditing={publish} />
       </View>
 
       <View style={st.seg}>
-        {SOURCES.map(([k, l]) => (
+        {SOURCES.map((k) => [k, t(`src.${k}`)]).map(([k, l]) => (
           <Pressable key={k} style={[st.segBtn, src === k && st.segOn]} onPress={() => setSrc(k)} accessibilityRole="tab" accessibilityState={{ selected: src === k }}>
             <Text style={[st.segTxt, src === k && { color: C.fg }]}>{l}</Text>
           </Pressable>
@@ -104,26 +101,26 @@ export function ReplySheet({ visible, problem, myStickers, lastAdded, onClose, o
       {src === "mine" ? (
         <View style={{ gap: 8 }}>
           <View style={st.chips}>
-            <Pressable style={[st.chip, st.add, { width: chip, height: chip }]} onPress={onAddStickers} accessibilityLabel="Aggiungi dalla galleria">
+            <Pressable style={[st.chip, st.add, { width: chip, height: chip }]} onPress={onAddStickers} accessibilityLabel={t("reply.addGallery")}>
               <Text style={st.addTxt}>+</Text>
             </Pressable>
-            <Pressable style={[st.chip, st.add, { width: chip, height: chip }]} onPress={onPaste} accessibilityLabel="Incolla uno sticker copiato">
+            <Pressable style={[st.chip, st.add, { width: chip, height: chip }]} onPress={onPaste} accessibilityLabel={t("profile.pasteLabel")}>
               <Text style={[st.addTxt, { fontSize: 18 }]}>⧉</Text>
             </Pressable>
             {myStickers.map((sk, i) => (
-              <Pressable key={sk.v} onPress={() => setSticker(sk)} accessibilityLabel={`Sticker ${i + 1}`}
+              <Pressable key={sk.v} onPress={() => setSticker(sk)} accessibilityLabel={t("reply.sticker", { n: i + 1 })}
                 style={[st.chip, { width: chip, height: chip }, current?.v === sk.v && st.on]}>
                 <StickerImage sticker={sk} thumb style={{ width: "82%", height: "82%" }} />
               </Pressable>
             ))}
           </View>
-          <Text style={st.small}>+ aggiunge dalla galleria, ⧉ incolla uno sticker copiato. Restano salvati su questo telefono. Gli sticker GIPHY che usi finiscono qui da soli.</Text>
+          <Text style={st.small}>{t("reply.note")}</Text>
         </View>
       ) : (
         <GiphyPicker kind={src} selected={current} onSelect={setSticker} cell={cell} />
       )}
 
-      <Primary label="Pubblica" disabled={!text} onPress={publish} />
+      <Primary label={t("publish")} disabled={!text} onPress={publish} />
     </Sheet>
   );
 }
@@ -133,26 +130,26 @@ export function ProblemSheet({ visible, onClose, onPublish }) {
   const [cat, setCat] = useState("altro");
   useEffect(() => { if (visible) { setText(""); setCat("altro"); } }, [visible]);
   return (
-    <Sheet visible={visible} title="Racconta il tuo problema" onClose={onClose}>
-      <Text style={st.sub}>Una frase basta. Gli altri potranno risponderti solo con uno sticker o una GIF, più il loro testo.</Text>
+    <Sheet visible={visible} title={t("problem.title")} onClose={onClose}>
+      <Text style={st.sub}>{t("problem.sub")}</Text>
       <View style={{ gap: 6 }}>
-        <Text style={st.lab}>COSA TI È SUCCESSO?</Text>
+        <Text style={st.lab}>{t("problem.what")}</Text>
         <TextInput value={text} onChangeText={setText} maxLength={140} multiline autoFocus
-          placeholder="Es. Ho chiamato la prof «mamma» davanti a tutta la classe" placeholderTextColor={C.muted}
+          placeholder={t("problem.ph")} placeholderTextColor={C.muted}
           style={[st.input, { minHeight: 84, textAlignVertical: "top" }]} />
         <Text style={[st.small, { alignSelf: "flex-end" }]}>{text.length} / 140</Text>
       </View>
       <View style={{ gap: 8 }}>
-        <Text style={st.lab}>CATEGORIA</Text>
+        <Text style={st.lab}>{t("problem.category")}</Text>
         <View style={st.cats}>
-          {CATEGORIES.map(([k, l]) => (
+          {categories().map(([k, l]) => (
             <Pressable key={k} onPress={() => setCat(k)} style={[st.cat, cat === k && st.catOn]} accessibilityRole="radio" accessibilityState={{ selected: cat === k }}>
               <Text style={[st.catTxt, cat === k && { color: C.bg }]}>{l}</Text>
             </Pressable>
           ))}
         </View>
       </View>
-      <Primary label="Pubblica" disabled={!text.trim()} onPress={() => onPublish(text.trim(), cat)} />
+      <Primary label={t("publish")} disabled={!text.trim()} onPress={() => onPublish(text.trim(), cat)} />
     </Sheet>
   );
 }
@@ -162,16 +159,16 @@ export function EditProfileSheet({ visible, profile, onClose, onSave }) {
   const [bio, setBio] = useState(profile.bio);
   useEffect(() => { if (visible) { setName(profile.name); setBio(profile.bio); } }, [visible]); // eslint-disable-line react-hooks/exhaustive-deps
   return (
-    <Sheet visible={visible} title="Modifica profilo" onClose={onClose}>
+    <Sheet visible={visible} title={t("edit.title")} onClose={onClose}>
       <View style={{ gap: 6 }}>
-        <Text style={st.lab}>NOME</Text>
+        <Text style={st.lab}>{t("edit.name")}</Text>
         <TextInput value={name} onChangeText={setName} maxLength={30} style={st.input} placeholderTextColor={C.muted} />
       </View>
       <View style={{ gap: 6 }}>
-        <Text style={st.lab}>BIO</Text>
+        <Text style={st.lab}>{t("edit.bio")}</Text>
         <TextInput value={bio} onChangeText={setBio} maxLength={100} multiline style={[st.input, { minHeight: 60, textAlignVertical: "top" }]} />
       </View>
-      <Primary label="Salva" onPress={() => onSave({ name: name.trim() || "Tu", bio: bio.trim() })} />
+      <Primary label={t("save")} onPress={() => onSave({ name: name.trim() || t("edit.defaultName"), bio: bio.trim() })} />
     </Sheet>
   );
 }

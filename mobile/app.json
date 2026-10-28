@@ -7,7 +7,10 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
     "ios": {
-      "supportsTablet": false
+      "supportsTablet": false,
+      "infoPlist": {
+        "CFBundleAllowMixedLocalizations": true
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -24,14 +27,21 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Stickback usa la galleria per aggiungere i tuoi sticker."
+          "photosPermission": "Stickback uses your photos to add your stickers."
         }
-      ]
+      ],
+      "expo-localization"
     ],
     "scheme": "stickback",
     "backgroundColor": "#1a1622",
     "experiments": {
       "baseUrl": "/stickback/app"
+    },
+    "locales": {
+      "it": "./locales/it.json",
+      "en": "./locales/en.json",
+      "de": "./locales/de.json",
+      "fr": "./locales/fr.json"
     }
   }
 }

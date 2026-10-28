@@ -13,6 +13,7 @@ import { EditProfileSheet, ProblemSheet, ReplySheet } from "./components/Sheets.
 import { Avatar, HomeIcon, Toast } from "./components/ui.js";
 import { ConfirmSheet, MoreSheet, ReportSheet, SettingsSheet, TermsGate } from "./components/Safety.js";
 import { FeedHeader, TOPBAR_HEIGHT } from "./components/Social.js";
+import { t, tn } from "./i18n/index.js";
 
 
 export default function StickbackApp({ userId }) {
@@ -46,7 +47,7 @@ export default function StickbackApp({ userId }) {
 
   const say = useCallback((msg) => setToast({ msg, n: Date.now() }), []);
   const close = useCallback(() => setSheet(null), []);
-  const oops = useCallback(() => say("Non sono riuscito a salvare. Controlla la connessione e riprova."), [say]);
+  const oops = useCallback(() => say(t("toast.saveFail")), [say]);
 
   // ───────── Loading ─────────
   const refresh = useCallback(async () => {
@@ -56,7 +57,7 @@ export default function StickbackApp({ userId }) {
       setLoadError(false);
     } catch {
       setLoadError(true);
-      say("Non riesco a caricare i problemi. Controlla la connessione.");
+      say(t("toast.loadFail"));
     }
   }, [userId, say, category]);
 
@@ -92,7 +93,7 @@ export default function StickbackApp({ userId }) {
           if (meme.author === meRef.current) return; // your own reply is already on screen
           dispatch({ type: "setUsers", users: us });
           dispatch({ type: "addReply", pid: p.id, meme });
-          if (p.author === meRef.current) say(`@${meme.author} ha risposto al tuo problema`);
+          if (p.author === meRef.current) say(t("toast.newReply", { user: meme.author }));
         } catch { /* it will show up on the next refresh */ }
       })
       .subscribe();
@@ -101,31 +102,31 @@ export default function StickbackApp({ userId }) {
 
   // ───────── Your stickers ─────────
   const addStickers = async (stickers, msg) => {
-    say("Salvo gli sticker…");
+    say(t("toast.savingStickers"));
     const saved = [];
     for (const st of stickers) {
       try { saved.push(await api.saveSticker(st)); } catch { /* skip the ones that fail */ }
     }
-    if (!saved.length) { say("Non sono riuscito a salvare lo sticker. Riprova."); return; }
+    if (!saved.length) { say(t("toast.stickerSaveFail")); return; }
     dispatch({ type: "addStickers", stickers: [...saved].reverse() });
     setLastAdded(saved[saved.length - 1]);
-    say(msg || (saved.length === 1 ? "Sticker aggiunto" : `${saved.length} sticker aggiunti`));
+    say(msg || tn("toast.stickersAdded", saved.length));
   };
   const fromGallery = async () => {
     try {
       const stickers = await pickStickers();
       if (stickers.length) await addStickers(stickers);
     } catch {
-      say("Non riesco ad aprire la galleria. Controlla i permessi di Stickback nelle impostazioni.");
+      say(t("toast.galleryFail"));
     }
   };
   const fromClipboard = async () => {
     try {
       const st = await pasteSticker();
-      if (st) await addStickers([st], "Sticker incollato");
-      else say("Negli appunti non c'è un'immagine. Copia prima uno sticker.");
+      if (st) await addStickers([st], t("toast.pasted"));
+      else say(t("toast.noImage"));
     } catch {
-      say("Non riesco a leggere gli appunti.");
+      say(t("toast.clipboardFail"));
     }
   };
 
@@ -136,31 +137,31 @@ export default function StickbackApp({ userId }) {
     } else {
       const clean = api.cleanSticker(sticker);
       dispatch({ type: "addStickers", stickers: [clean] });
-      say("Salvato nei tuoi sticker");
+      say(t("toast.saved"));
       api.saveSticker(clean).catch(oops);
     }
   };
   const askRemoveSticker = (sticker) => setAsk({
-    title: "Togliere questo sticker?",
-    text: "Non lo troverai più tra i tuoi sticker. Le risposte in cui l'hai già usato restano come sono.",
-    confirm: "Togli",
+    title: t("ask.removeSticker"),
+    text: t("ask.removeStickerText"),
+    confirm: t("ask.remove"),
     run: () => removeSticker(sticker),
   });
   const askDelete = (t) => {
     setMore(null);
     setAsk(t.kind === "problem" ? {
-      title: "Eliminare il problema?",
-      text: "Sparisce per tutti, insieme a tutte le risposte che ha ricevuto. Non si può annullare.",
-      confirm: "Elimina", run: () => doDelete(t),
+      title: t("ask.deleteProblem"),
+      text: t("ask.deleteProblemText"),
+      confirm: t("delete"), run: () => doDelete(t),
     } : {
-      title: "Eliminare la risposta?",
-      text: "Sparisce per tutti, con le stelle che ha ricevuto. Non si può annullare.",
-      confirm: "Elimina", run: () => doDelete(t),
+      title: t("ask.deleteReply"),
+      text: t("ask.deleteReplyText"),
+      confirm: t("delete"), run: () => doDelete(t),
     });
   };
   const removeSticker = (st) => {
     dispatch({ type: "removeSticker", v: st.v });
-    say("Tolto dai tuoi sticker");
+    say(t("toast.removed"));
     if (!st.example) api.removeSavedSticker(st.v).catch(oops);
   };
 
@@ -199,7 +200,7 @@ export default function StickbackApp({ userId }) {
   // ───────── Posting ─────────
   const publishReply = async (pid, { sticker, caption }) => {
     setSheet(null);
-    say("Pubblico…");
+    say(t("toast.publishing"));
     try {
       const { id, sticker: stored } = await api.createReply(pid, caption, sticker);
       dispatch({ type: "addReply", pid, meme: { id, author: me, stars: 0, starred: false, sticker: stored, caption } });
@@ -209,9 +210,9 @@ export default function StickbackApp({ userId }) {
       }
       setFocus({ pid, mid: id, n: nextId() });
       setPostsVersion((n) => n + 1);
-      say(stored.type === "gif" ? "GIF pubblicata" : "Sticker pubblicato");
+      say(stored.type === "gif" ? t("toast.gifPublished") : t("toast.stickerPublished"));
     } catch (e) {
-      say(api.explainError(e, "Non sono riuscito a pubblicare. Controlla la connessione e riprova."));
+      say(api.explainError(e, t("toast.publishFail")));
     }
   };
 
@@ -223,9 +224,9 @@ export default function StickbackApp({ userId }) {
       setPostsVersion((n) => n + 1);
       setView("feed");
       setTimeout(() => feedRef.current?.scrollToProblem(row.id), 50);
-      say("Problema pubblicato");
+      say(t("toast.problemPublished"));
     } catch (e) {
-      say(api.explainError(e, "Non sono riuscito a pubblicare. Controlla la connessione e riprova."));
+      say(api.explainError(e, t("toast.publishFail")));
     }
   };
 
@@ -234,9 +235,9 @@ export default function StickbackApp({ userId }) {
     dispatch({ type: "updateProfile", user: me, data });
     try {
       await api.updateProfile(userId, data);
-      say("Profilo aggiornato");
+      say(t("toast.profileUpdated"));
     } catch (e) {
-      say(api.explainError(e, "Non sono riuscito a salvare. Controlla la connessione e riprova."));
+      say(api.explainError(e, t("toast.saveFail")));
       refresh();
     }
   };
@@ -259,7 +260,7 @@ export default function StickbackApp({ userId }) {
       // what you reported disappears for you right away
       if (t.kind === "problem") removeLocally((ps) => ps.filter((p) => p.id !== t.id));
       if (t.kind === "reply") removeLocally((ps) => ps.map((p) => ({ ...p, memes: p.memes.filter((m) => m.id !== t.id) })));
-      say("Segnalazione inviata. Grazie!");
+      say(t("toast.reportSent"));
     } catch { oops(); }
   };
 
@@ -272,7 +273,7 @@ export default function StickbackApp({ userId }) {
       setBlockTarget(null);
       removeLocally((ps) => ps.filter((p) => p.author !== who).map((p) => ({ ...p, memes: p.memes.filter((m) => m.author !== who) })));
       if (view === "profile" && profileUser === who) setView("feed");
-      say(`@${who} è bloccato`);
+      say(t("toast.blocked", { user: who }));
     } catch { oops(); }
   };
 
@@ -287,16 +288,16 @@ export default function StickbackApp({ userId }) {
         removeLocally((ps) => ps.map((p) => ({ ...p, memes: p.memes.filter((m) => m.id !== t.id) })));
       }
       setPostsVersion((n) => n + 1);
-      say("Eliminato");
+      say(t("toast.deleted"));
     } catch { oops(); }
   };
 
   const unblock = async (b) => {
-    try { await api.unblockUser(b.id); say(`@${b.username} sbloccato`); refresh(); } catch { oops(); }
+    try { await api.unblockUser(b.id); say(t("toast.unblocked", { user: b.username })); refresh(); } catch { oops(); }
   };
 
   const deleteAccount = async () => {
-    try { await api.deleteAccount(); } catch { say("Non sono riuscito a eliminare l'account. Riprova."); }
+    try { await api.deleteAccount(); } catch { say(t("toast.deleteAccountFail")); }
   };
 
   const replyTo = sheet?.kind === "reply" ? problems.find((p) => p.id === sheet.pid) : null;
@@ -306,7 +307,7 @@ export default function StickbackApp({ userId }) {
     return (
       <TermsGate banned={gate === "banned"} onSignOut={signOut}
         onAccept={async () => {
-          try { await api.acceptTerms(); setGate(null); } catch { say("Non sono riuscito a salvare. Riprova."); }
+          try { await api.acceptTerms(); setGate(null); } catch { say(t("toast.saveFailShort")); }
         }} />
     );
   }
@@ -316,9 +317,9 @@ export default function StickbackApp({ userId }) {
       <View style={[st.app, st.center]}>
         {loadError ? (
           <View style={{ alignItems: "center", gap: 14, padding: 24 }}>
-            <Text style={st.centerTxt}>Non riesco a raggiungere Stickback. Controlla la connessione.</Text>
-            <Pressable style={st.retry} onPress={() => { setLoadError(false); refresh(); }}><Text style={st.retryTxt}>Riprova</Text></Pressable>
-            <Pressable onPress={signOut}><Text style={st.link}>Esci</Text></Pressable>
+            <Text style={st.centerTxt}>{t("app.unreachable")}</Text>
+            <Pressable style={st.retry} onPress={() => { setLoadError(false); refresh(); }}><Text style={st.retryTxt}>{t("retry")}</Text></Pressable>
+            <Pressable onPress={signOut}><Text style={st.link}>{t("signOut")}</Text></Pressable>
           </View>
         ) : <ActivityIndicator color={C.accent} />}
       </View>
@@ -338,15 +339,15 @@ export default function StickbackApp({ userId }) {
             <View style={[st.center, { flex: 1, paddingTop: topInset, paddingHorizontal: 32, gap: 14 }]}>
               {category ? (
                 <>
-                  <Text style={st.emptyTitle}>Niente in questa categoria</Text>
-                  <Text style={st.centerTxt}>Nessun problema recente qui. Racconta il primo!</Text>
-                  <Pressable style={st.retry} onPress={() => setSheet({ kind: "problem" })}><Text style={st.retryTxt}>Racconta un problema</Text></Pressable>
+                  <Text style={st.emptyTitle}>{t("app.emptyCatTitle")}</Text>
+                  <Text style={st.centerTxt}>{t("app.emptyCatBody")}</Text>
+                  <Pressable style={st.retry} onPress={() => setSheet({ kind: "problem" })}><Text style={st.retryTxt}>{t("app.tellOne")}</Text></Pressable>
                 </>
               ) : (
                 <>
-                  <Text style={st.emptyTitle}>Ancora nessun problema</Text>
-                  <Text style={st.centerTxt}>Sei tra i primi. Racconta una figuraccia: gli altri ti risponderanno con uno sticker.</Text>
-                  <Pressable style={st.retry} onPress={() => setSheet({ kind: "problem" })}><Text style={st.retryTxt}>Racconta il primo problema</Text></Pressable>
+                  <Text style={st.emptyTitle}>{t("app.emptyTitle")}</Text>
+                  <Text style={st.centerTxt}>{t("app.emptyBody")}</Text>
+                  <Pressable style={st.retry} onPress={() => setSheet({ kind: "problem" })}><Text style={st.retryTxt}>{t("app.tellFirst")}</Text></Pressable>
                 </>
               )}
             </View>
@@ -367,15 +368,15 @@ export default function StickbackApp({ userId }) {
       <View style={[st.tabbar, { paddingBottom: Math.max(insets.bottom, 10) }]}>
         <Pressable style={st.tab} onPress={() => setView("feed")} accessibilityRole="tab" accessibilityState={{ selected: view === "feed" }}>
           <HomeIcon color={view === "feed" ? C.fg : C.muted} />
-          <Text style={[st.tabTxt, view === "feed" && { color: C.fg }]}>Home</Text>
+          <Text style={[st.tabTxt, view === "feed" && { color: C.fg }]}>{t("tab.home")}</Text>
         </Pressable>
-        <Pressable style={({ pressed }) => [st.plus, pressed && { opacity: 0.85 }]} onPress={() => setSheet({ kind: "problem" })} accessibilityLabel="Racconta un problema">
+        <Pressable style={({ pressed }) => [st.plus, pressed && { opacity: 0.85 }]} onPress={() => setSheet({ kind: "problem" })} accessibilityLabel={t("tab.new")}>
           <Text style={st.plusTxt}>+</Text>
         </Pressable>
         <Pressable style={st.tab} onPress={() => openProfile(me, false)} accessibilityRole="tab"
           accessibilityState={{ selected: view === "profile" && profileUser === me }}>
           <View style={view === "profile" && profileUser === me ? st.avOn : null}><Avatar users={users} user={me} size={24} /></View>
-          <Text style={[st.tabTxt, view === "profile" && profileUser === me && { color: C.fg }]}>Profilo</Text>
+          <Text style={[st.tabTxt, view === "profile" && profileUser === me && { color: C.fg }]}>{t("tab.profile")}</Text>
         </Pressable>
       </View>
 
@@ -391,8 +392,8 @@ export default function StickbackApp({ userId }) {
       <ConfirmSheet visible={!!ask} title={ask?.title ?? ""} text={ask?.text ?? ""} confirm={ask?.confirm ?? ""} danger
         onClose={() => setAsk(null)} onConfirm={async () => { const run = ask.run; setAsk(null); await run(); }} />
       <ReportSheet target={reportTarget} onClose={() => setReportTarget(null)} onSend={sendReport} />
-      <ConfirmSheet visible={!!blockTarget} title={`Bloccare @${blockTarget}?`} danger confirm="Blocca"
-        text="Non vedrete più i problemi e le risposte l'uno dell'altro, e non potrà più risponderti. Non riceverà nessuna notifica. Puoi sbloccarlo dalle Impostazioni."
+      <ConfirmSheet visible={!!blockTarget} title={t("ask.block", { user: blockTarget })} danger confirm={t("ask.blockConfirm")}
+        text={t("ask.blockText")}
         onClose={() => setBlockTarget(null)} onConfirm={doBlock} />
       <SettingsSheet visible={settings} loadBlocked={api.loadBlocked} onUnblock={unblock} onClose={() => setSettings(false)}
         onSignOut={() => { setSettings(false); signOut(); }} onDeleteAccount={deleteAccount} />

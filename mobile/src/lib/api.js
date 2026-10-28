@@ -2,6 +2,7 @@
 import { decode } from "base64-arraybuffer";
 import { supabase } from "./supabase.js";
 import { ago } from "./util.js";
+import { t } from "../i18n/index.js";
 
 const PROFILE = "id, username, name, bio";
 
@@ -11,11 +12,10 @@ export const cleanSticker = ({ type, v, thumb, giphy }) => ({ type, v, ...(thumb
 const fail = (error) => { if (error) throw error; };
 
 // ───────── Feed ─────────
-export const CATEGORIES = [
-  ["scuola", "Scuola"], ["lavoro", "Lavoro"], ["famiglia", "Famiglia"],
-  ["amore", "Amore"], ["amici", "Amici"], ["altro", "Altro"],
-];
-export const categoryLabel = (k) => CATEGORIES.find(([c]) => c === k)?.[1] ?? "Altro";
+// Keys are stored in the database; the labels follow the app's language
+export const CATEGORY_KEYS = ["scuola", "lavoro", "famiglia", "amore", "amici", "altro"];
+export const categories = () => CATEGORY_KEYS.map((k) => [k, t(`cat.${k}`)]);
+export const categoryLabel = (k) => t(`cat.${CATEGORY_KEYS.includes(k) ? k : "altro"}`);
 
 // One feed for everyone: a mix of fresh problems, the most starred, and the ones that still need replies
 export async function loadFeed(uid, { category = null } = {}) {
@@ -187,15 +187,9 @@ export async function ensureUploaded(sticker) {
 }
 
 // ───────── Safety ─────────
-export const REPORT_REASONS = [
-  ["bullismo", "Bullismo o molestie", "Prende in giro, insulta o minaccia qualcuno"],
-  ["dati_personali", "Fa riconoscere qualcuno", "Nome, foto, scuola o altri dati di una persona vera"],
-  ["odio", "Odio o violenza", "Contro un gruppo di persone, o incita alla violenza"],
-  ["sessuale", "Contenuti sessuali", "Immagini o testi sessuali espliciti"],
-  ["autolesionismo", "Qualcuno potrebbe stare male", "Parla di farsi del male o di suicidio"],
-  ["spam", "Spam o truffa", "Pubblicità, link sospetti, messaggi ripetuti"],
-  ["altro", "Altro", "Viola le regole in un altro modo"],
-];
+// Keys are stored in the database; the labels follow the app's language
+const REASON_KEYS = ["bullismo", "dati_personali", "odio", "sessuale", "autolesionismo", "spam", "altro"];
+export const reportReasons = () => REASON_KEYS.map((k) => [k, t(`reason.${k}`), t(`reason.${k}.hint`)]);
 
 export async function report({ problemId = null, replyId = null, userId = null, reason, details = "" }) {
   const { error } = await supabase.from("reports").insert({
@@ -256,8 +250,8 @@ export async function deleteAccount() {
 // Turn database errors into something people understand
 export function explainError(e, fallback) {
   const m = `${e?.message || ""} ${e?.details || ""}`.toLowerCase();
-  if (m.includes("contenuto_non_ammesso")) return "Il testo contiene parole non ammesse. Riformulalo.";
-  if (m.includes("row-level security")) return "Non puoi farlo: forse l'utente è bloccato o il contenuto è stato nascosto.";
+  if (m.includes("contenuto_non_ammesso")) return t("err.blockedWord");
+  if (m.includes("row-level security")) return t("err.notAllowed");
   return fallback;
 }
 

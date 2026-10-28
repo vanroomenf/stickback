@@ -3,13 +3,14 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, useWindowDi
 import { orderReplies } from "../store.js";
 import { fmt, hue, initialOf } from "../lib/util.js";
 import { C, F } from "../theme.js";
+import { t } from "../i18n/index.js";
 import { StarIcon, StickerCard, StickerImage } from "./ui.js";
 
 export default function Profile({ me: myName, user, users, problems, myStickers, showBack, onBack, onGo, onEdit, onAddStickers, onPaste, onRemoveSticker, onSettings, onMore, topInset, loadPosts, postsVersion }) {
   const [tab, setTab] = useState("problemi");
   const { width } = useWindowDimensions();
   const me = user === myName;
-  const info = users[user] || { name: user, bio: "Qui solo per gli sticker." };
+  const info = users[user] || { name: user, bio: t("profile.defaultBio") };
 
   // Everything this person posted, also what's too old for the feed; the feed's copy is shown while it loads
   const [posts, setPosts] = useState(null);
@@ -23,7 +24,7 @@ export default function Profile({ me: myName, user, users, problems, myStickers,
   const probs = all.filter((p) => p.author === user);
   const replies = all.flatMap((p) => p.memes.filter((m) => m.author === user).map((m) => ({ p, m })));
   const stars = probs.reduce((a, p) => a + p.stars, 0) + replies.reduce((a, r) => a + r.m.stars, 0);
-  const tabs = [["problemi", "Problemi"], ["risposte", "Risposte"], ...(me ? [["sticker", "Sticker"]] : [])];
+  const tabs = [["problemi", t("profile.problems")], ["risposte", t("profile.replies")], ...(me ? [["sticker", t("profile.stickers")]] : [])];
 
   const inner = Math.min(width, 520) - 40;
   const half = (inner - 12) / 2;
@@ -32,11 +33,11 @@ export default function Profile({ me: myName, user, users, problems, myStickers,
   return (
     <ScrollView contentContainerStyle={[st.wrap, { paddingTop: topInset + 12 }]}>
       <View style={st.phead}>
-        {showBack && <Pressable onPress={onBack} hitSlop={8}><Text style={st.back}>‹ Indietro</Text></Pressable>}
+        {showBack && <Pressable onPress={onBack} hitSlop={8}><Text style={st.back}>{t("profile.back")}</Text></Pressable>}
         {!me && <Text style={st.ttl}>@{user}</Text>}
         {!me && (
           <Pressable style={{ marginLeft: "auto", paddingHorizontal: 6 }} hitSlop={10} onPress={() => onMore({ kind: "user", author: user })}
-            accessibilityLabel="Segnala o blocca">
+            accessibilityLabel={t("profile.reportBlock")}>
             <Text style={{ color: C.muted, fontSize: 22, fontFamily: F.bold }}>⋯</Text>
           </Pressable>
         )}
@@ -53,13 +54,13 @@ export default function Profile({ me: myName, user, users, problems, myStickers,
       {!!info.bio && <Text style={st.bio}>{info.bio}</Text>}
       {me && (
         <View style={{ flexDirection: "row", gap: 10 }}>
-          <Pressable style={st.editbtn} onPress={onEdit}><Text style={st.editTxt}>Modifica profilo</Text></Pressable>
-          <Pressable style={st.editbtn} onPress={onSettings}><Text style={[st.editTxt, { color: C.muted }]}>Impostazioni</Text></Pressable>
+          <Pressable style={st.editbtn} onPress={onEdit}><Text style={st.editTxt}>{t("profile.edit")}</Text></Pressable>
+          <Pressable style={st.editbtn} onPress={onSettings}><Text style={[st.editTxt, { color: C.muted }]}>{t("profile.settings")}</Text></Pressable>
         </View>
       )}
 
       <View style={st.stats}>
-        {[["Problemi", probs.length], ["Risposte", replies.length], ["Stelle", fmt(stars)]].map(([l, v], i) => (
+        {[[t("profile.problems"), probs.length], [t("profile.replies"), replies.length], [t("profile.stars"), fmt(stars)]].map(([l, v], i) => (
           <View key={l} style={st.stat}>
             <Text style={[st.statNum, i === 2 && { color: C.accent }]}>{v}</Text>
             <Text style={st.statLbl}>{l.toUpperCase()}</Text>
@@ -79,7 +80,7 @@ export default function Profile({ me: myName, user, users, problems, myStickers,
         <Pressable key={p.id} style={st.pitem} onPress={() => onGo(p.id, null, p)}>
           <View style={{ flexDirection: "row", gap: 8 }}>
             <Text style={[st.pitemT, { flex: 1 }]}>{p.text}</Text>
-            {me && <MoreBtn label="Elimina il problema" onPress={() => onMore({ kind: "problem", id: p.id, author: p.author })} />}
+            {me && <MoreBtn label={t("more.deleteProblem")} onPress={() => onMore({ kind: "problem", id: p.id, author: p.author })} />}
           </View>
           <View style={st.pitemM}>
             <StarIcon filled size={14} color={C.accent} />
@@ -92,7 +93,7 @@ export default function Profile({ me: myName, user, users, problems, myStickers,
             </View>
           </View>
         </Pressable>
-      )) : posts === null && !probs.length ? <ActivityIndicator color={C.accent} style={{ paddingVertical: 28 }} /> : <Text style={st.pempty}>{me ? "Non hai ancora raccontato nessun problema.\nTocca + in basso per iniziare." : "Nessun problema ancora."}</Text>)}
+      )) : posts === null && !probs.length ? <ActivityIndicator color={C.accent} style={{ paddingVertical: 28 }} /> : <Text style={st.pempty}>{me ? t("profile.emptyMine") : t("profile.empty")}</Text>)}
 
       {tab === "risposte" && (replies.length ? (
         <View style={st.rgrid}>
@@ -102,34 +103,34 @@ export default function Profile({ me: myName, user, users, problems, myStickers,
               <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
                 <StarIcon filled size={13} color={C.accent} />
                 <Text style={st.gold}>{fmt(m.stars)}</Text>
-                {me && <View style={{ marginLeft: "auto" }}><MoreBtn label="Elimina la risposta" onPress={() => onMore({ kind: "reply", id: m.id, pid: p.id, author: m.author })} /></View>}
+                {me && <View style={{ marginLeft: "auto" }}><MoreBtn label={t("more.deleteReply")} onPress={() => onMore({ kind: "reply", id: m.id, pid: p.id, author: m.author })} /></View>}
               </View>
-              <Text style={st.small} numberOfLines={2}>su: {p.text}</Text>
+              <Text style={st.small} numberOfLines={2}>{t("profile.on", { text: p.text })}</Text>
             </Pressable>
           ))}
         </View>
-      ) : <Text style={st.pempty}>Nessuna risposta ancora.</Text>)}
+      ) : <Text style={st.pempty}>{t("profile.noReplies")}</Text>)}
 
       {tab === "sticker" && (
         <>
           <View style={st.sgrid}>
-            <Pressable style={[st.addtile, { width: tile, height: tile }]} onPress={onAddStickers} accessibilityLabel="Aggiungi sticker dalla galleria">
-              <Text style={st.addPlus}>+</Text><Text style={st.addTxt}>Galleria</Text>
+            <Pressable style={[st.addtile, { width: tile, height: tile }]} onPress={onAddStickers} accessibilityLabel={t("profile.addGallery")}>
+              <Text style={st.addPlus}>+</Text><Text style={st.addTxt}>{t("profile.gallery")}</Text>
             </Pressable>
-            <Pressable style={[st.addtile, { width: tile, height: tile }]} onPress={onPaste} accessibilityLabel="Incolla uno sticker copiato">
-              <Text style={st.addPlus}>⧉</Text><Text style={st.addTxt}>Incolla</Text>
+            <Pressable style={[st.addtile, { width: tile, height: tile }]} onPress={onPaste} accessibilityLabel={t("profile.pasteLabel")}>
+              <Text style={st.addPlus}>⧉</Text><Text style={st.addTxt}>{t("profile.paste")}</Text>
             </Pressable>
             {myStickers.map((sk) => (
               <View key={sk.v} style={[st.stile, { width: tile, height: tile }]}>
                 <StickerImage sticker={sk} thumb style={{ width: "78%", height: "78%" }} />
-                <Pressable style={st.rm} hitSlop={6} onPress={() => onRemoveSticker(sk)} accessibilityLabel="Togli dai tuoi sticker">
+                <Pressable style={st.rm} hitSlop={6} onPress={() => onRemoveSticker(sk)} accessibilityLabel={t("feed.unsave")}>
                   <Text style={st.rmTxt}>×</Text>
                 </Pressable>
               </View>
             ))}
           </View>
           <Text style={st.note}>
-            Aggiungi i tuoi sticker dalla galleria, oppure incolla uno sticker copiato (su iPhone: fai uno screenshot, aprilo in Foto, tieni premuto sullo sticker e scegli Copia). Puoi salvare anche quelli che usano gli altri, con il pulsante accanto alla stella. Finché non ne aggiungi, qui trovi qualche esempio da GIPHY. I tuoi sticker sono salvati nel tuo account, quindi li ritrovi anche su un altro telefono.
+            {t("profile.note")}
           </Text>
         </>
       )}

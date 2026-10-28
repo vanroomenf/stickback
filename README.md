@@ -139,6 +139,15 @@ Migrazione `supabase/migrations/0004_social.sql`.
 - **Un feed unico** ordinato con un punteggio che mescola problemi recenti, stelle e problemi che hanno ancora poche risposte, così nessuno resta senza (`feed_for_you`).
 - **Categorie**: Scuola, Lavoro, Famiglia, Amore, Amici, Altro. Si sceglie quando si pubblica e si filtra dal feed.
 
+## Lingue
+
+L'app in `mobile/` è in **italiano, inglese, tedesco e francese**. Segue la lingua del telefono; per tutte le altre lingue usa l'inglese. Si può anche scegliere a mano da Profilo → Impostazioni → Lingua.
+
+- Testi: `mobile/src/i18n/it.js` (riferimento), `en.js`, `de.js`, `fr.js`. Ogni file ha le stesse chiavi; nel codice si usa `t("chiave")`.
+- Numeri di aiuto nelle segnalazioni: scelti in base al paese del telefono (Svizzera, Italia, Germania, Austria, Francia, Regno Unito, Stati Uniti), altrimenti findahelpline.com. Sono in `mobile/src/i18n/index.js`.
+- Regole e privacy in 4 lingue: si generano con `python3 scripts/legal_pages.py` (i testi stanno nello script). Italiano in `public/regole.html` e `public/privacy.html`, le altre in `public/en/`, `public/de/`, `public/fr/`.
+- Il testo che chiede il permesso per le foto è tradotto in `mobile/locales/`; vale nell'app installata dagli store, non in Expo Go.
+
 ## Prossimi passi per l'app negli store
 
 - **Condividi → Stickback anche su iPhone**: con una Share Extension nell'app nativa.

@@ -9,6 +9,7 @@ import { supabase } from "./src/lib/supabase.js";
 import AuthScreen from "./src/components/AuthScreen.js";
 import StickbackApp from "./src/StickbackApp.js";
 import { C } from "./src/theme.js";
+import { loadLanguage, onLanguageChange } from "./src/i18n/index.js";
 
 export default function App() {
   const [fontsReady, fontError] = useFonts({
@@ -16,6 +17,13 @@ export default function App() {
     Figtree_400Regular, Figtree_500Medium, Figtree_600SemiBold, Figtree_700Bold,
   });
   const [session, setSession] = useState(undefined); // undefined = still checking
+  const [langReady, setLangReady] = useState(false);
+  const [langKey, setLangKey] = useState("");
+
+  useEffect(() => {
+    loadLanguage().finally(() => setLangReady(true));
+    return onLanguageChange((code) => setLangKey(code)); // redraw every screen in the new language
+  }, []);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session ?? null));
@@ -23,7 +31,7 @@ export default function App() {
     return () => data.subscription.unsubscribe();
   }, []);
 
-  const ready = (fontsReady || fontError) && session !== undefined;
+  const ready = (fontsReady || fontError) && session !== undefined && langReady;
 
   return (
     <SafeAreaProvider>
@@ -33,9 +41,9 @@ export default function App() {
           <ActivityIndicator color={C.accent} />
         </View>
       ) : session ? (
-        <StickbackApp key={session.user.id} userId={session.user.id} />
+        <StickbackApp key={session.user.id + langKey} userId={session.user.id} />
       ) : (
-        <AuthScreen />
+        <AuthScreen key={langKey} />
       )}
     </SafeAreaProvider>
   );

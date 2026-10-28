@@ -6,20 +6,21 @@ import { C, F } from "../theme.js";
 import { Primary } from "./ui.js";
 import { BirthDateField, RulesCheckbox } from "./Safety.js";
 import { MIN_AGE, TERMS_VERSION, ageFrom } from "../lib/util.js";
+import { t } from "../i18n/index.js";
 
 const USERNAME = /^[a-z0-9._]{3,20}$/;
 
 // Supabase error messages, in words people understand
 function explain(error) {
   const m = (error?.message || "").toLowerCase();
-  if (m.includes("invalid login credentials")) return "Email o password sbagliate.";
-  if (m.includes("email not confirmed")) return "Prima conferma l'email: apri il link che ti abbiamo mandato, poi accedi.";
-  if (m.includes("already registered") || m.includes("already been registered")) return "Esiste già un account con questa email. Accedi.";
-  if (m.includes("password") && m.includes("characters")) return "La password deve avere almeno 6 caratteri.";
-  if (m.includes("rate limit") || m.includes("too many")) return "Troppi tentativi in poco tempo. Riprova tra qualche minuto.";
-  if (m.includes("network") || m.includes("fetch")) return "Connessione assente. Controlla internet e riprova.";
-  if (m.includes("database error saving new user")) return "Questo nome utente non è ammesso. Scegline un altro.";
-  return error?.message || "Qualcosa non ha funzionato. Riprova.";
+  if (m.includes("invalid login credentials")) return t("err.badLogin");
+  if (m.includes("email not confirmed")) return t("err.notConfirmed");
+  if (m.includes("already registered") || m.includes("already been registered")) return t("err.exists");
+  if (m.includes("password") && m.includes("characters")) return t("err.shortPassword");
+  if (m.includes("rate limit") || m.includes("too many")) return t("err.rateLimit");
+  if (m.includes("network") || m.includes("fetch")) return t("err.offline");
+  if (m.includes("database error saving new user")) return t("err.badUsername");
+  return t("err.generic");
 }
 
 export default function AuthScreen() {
@@ -54,7 +55,7 @@ export default function AuthScreen() {
         });
         if (error) throw error;
         if (!data.session) {
-          setMsg({ kind: "info", text: `Ti abbiamo mandato un'email a ${email.trim()}. Apri il link per confermare, poi torna qui e accedi.` });
+          setMsg({ kind: "info", text: t("auth.checkEmail", { email: email.trim() }) });
           setMode("login");
         }
       } else {
@@ -72,10 +73,10 @@ export default function AuthScreen() {
     <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1, backgroundColor: C.bg }}>
       <ScrollView contentContainerStyle={[st.wrap, { paddingTop: insets.top + 48, paddingBottom: insets.bottom + 24 }]} keyboardShouldPersistTaps="handled">
         <Text style={st.logo}>Stick<Text style={{ color: C.accent }}>back</Text></Text>
-        <Text style={st.tag}>Racconta un problema.{"\n"}Ti rispondono solo con sticker.</Text>
+        <Text style={st.tag}>{t("tagline")}</Text>
 
         <View style={st.seg}>
-          {[["signup", "Crea account"], ["login", "Accedi"]].map(([k, l]) => (
+          {[["signup", t("auth.signup")], ["login", t("auth.login")]].map(([k, l]) => (
             <Pressable key={k} style={[st.segBtn, mode === k && st.segOn]} onPress={() => { setMode(k); setMsg(null); }}>
               <Text style={[st.segTxt, mode === k && { color: C.fg }]}>{l}</Text>
             </Pressable>
@@ -84,33 +85,33 @@ export default function AuthScreen() {
 
         {signup && (
           <View style={st.field}>
-            <Text style={st.lab}>NOME UTENTE</Text>
+            <Text style={st.lab}>{t("auth.username")}</Text>
             <TextInput value={username} onChangeText={setUsername} autoCapitalize="none" autoCorrect={false} maxLength={20}
-              placeholder="es. florin.vr" placeholderTextColor={C.muted} style={st.input} textContentType="username" />
+              placeholder={t("auth.usernamePh")} placeholderTextColor={C.muted} style={st.input} textContentType="username" />
             <Text style={[st.hint, username && !userOk && { color: "#ff8a8a" }]}>
-              Da 3 a 20 caratteri: lettere minuscole, numeri, punto e trattino basso.
+              {t("auth.usernameHint")}
             </Text>
           </View>
         )}
         <View style={st.field}>
-          <Text style={st.lab}>EMAIL</Text>
+          <Text style={st.lab}>{t("auth.email")}</Text>
           <TextInput value={email} onChangeText={setEmail} autoCapitalize="none" autoCorrect={false} keyboardType="email-address"
-            placeholder="tu@email.com" placeholderTextColor={C.muted} style={st.input} textContentType="emailAddress" autoComplete="email" />
+            placeholder={t("auth.emailPh")} placeholderTextColor={C.muted} style={st.input} textContentType="emailAddress" autoComplete="email" />
         </View>
         <View style={st.field}>
-          <Text style={st.lab}>PASSWORD</Text>
-          <TextInput value={password} onChangeText={setPassword} secureTextEntry placeholder="Almeno 6 caratteri" placeholderTextColor={C.muted}
+          <Text style={st.lab}>{t("auth.password")}</Text>
+          <TextInput value={password} onChangeText={setPassword} secureTextEntry placeholder={t("auth.passwordPh")} placeholderTextColor={C.muted}
             style={st.input} textContentType={signup ? "newPassword" : "password"} autoComplete={signup ? "new-password" : "password"}
             returnKeyType="go" onSubmitEditing={() => canSend && submit()} />
         </View>
 
         {signup && <BirthDateField value={birth} onChange={(t) => { setBirth(t); setTooYoung(false); }} />}
         {signup && <RulesCheckbox checked={rules} onToggle={() => setRules(!rules)} />}
-        {tooYoung && <Text style={[st.msg, st.err]}>Stickback è per chi ha almeno {MIN_AGE} anni. Per ora non puoi creare un account.</Text>}
+        {tooYoung && <Text style={[st.msg, st.err]}>{t("auth.tooYoung", { age: MIN_AGE })}</Text>}
 
         {msg && <Text style={[st.msg, msg.kind === "error" ? st.err : st.info]}>{msg.text}</Text>}
 
-        <Primary label={busy ? "Un attimo…" : signup ? "Crea account" : "Accedi"} disabled={!canSend} onPress={submit} />
+        <Primary label={busy ? t("wait") : signup ? t("auth.signup") : t("auth.login")} disabled={!canSend} onPress={submit} />
       </ScrollView>
     </KeyboardAvoidingView>
   );

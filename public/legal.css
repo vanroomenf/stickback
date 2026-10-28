@@ -29,3 +29,8 @@ table{width:100%;border-collapse:collapse;font-size:15px}
 th,td{text-align:left;vertical-align:top;padding:10px 12px;border-bottom:1px solid var(--line)}
 th{color:var(--muted);font-weight:600;font-size:13px;text-transform:uppercase;letter-spacing:.06em}
 footer{margin-top:48px;color:var(--muted);font-size:14px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.langs{font-size:14px;font-weight:600;color:var(--muted);letter-spacing:.04em}
+.langs b{color:var(--fg)}
+.langs a{color:var(--muted);text-decoration:none;padding:4px 2px}
+.langs a:hover{color:var(--accent)}
