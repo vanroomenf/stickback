@@ -18,18 +18,35 @@ Il nome unisce *sticker* e *clapback*, cioè la risposta pronta e ironica.
 
 ## Prototipo
 
-Il prototipo cliccabile è in [`prototype/index.html`](prototype/index.html). È un singolo file HTML senza dipendenze: si apre direttamente nel browser.
-
 Versione online: **https://vanroomenf.github.io/stickback/**
 
-Ogni modifica caricata su `main` viene pubblicata da sola in un paio di minuti (workflow in `.github/workflows/pages.yml`).
+L'app è scritta in **React** con **Vite**. Ogni modifica caricata su `main` viene costruita e pubblicata da sola su GitHub Pages in un paio di minuti (workflow in `.github/workflows/pages.yml`).
 
-Nel prototipo:
-- i dati sono di esempio e restano solo in memoria (si azzerano ricaricando la pagina);
-- gli sticker di esempio sono emoji; con **+** puoi caricare immagini vere (meglio PNG o WEBP con sfondo trasparente, come gli sticker di WhatsApp);
-- puoi incollare uno sticker copiato (Ctrl/Cmd+V) mentre l'app è aperta;
-- quando posti un problema arrivano due risposte simulate, per vedere le notifiche.
-- la ricerca GIPHY usa la chiave in `GIPHY_KEY_DEFAULT` dentro `prototype/index.html`; se è vuota, l'app chiede di incollare una chiave, che resta salvata solo su quel telefono o browser.
+### Avviarla sul computer
+
+```bash
+npm install
+npm run dev      # apre l'app su http://localhost:5173
+npm run build    # crea la versione da pubblicare in dist/
+```
+
+### Struttura
+
+- `src/App.jsx`: schermate, finestre e navigazione
+- `src/store.js`: tutti i dati dell'app e le azioni (stelle, risposte, corona, nuovi problemi)
+- `src/data.js`: contenuti di esempio
+- `src/components/Feed.jsx`: feed verticale e risposte in orizzontale
+- `src/components/Profile.jsx`: pagina profilo
+- `src/components/Sheets.jsx`: finestre per rispondere, raccontare un problema e modificare il profilo
+- `src/components/GiphyPicker.jsx` e `src/lib/giphy.js`: ricerca di sticker e GIF su GIPHY
+- `src/config.js`: chiave GIPHY dell'app
+
+### Cosa sapere
+
+- I dati sono di esempio e restano solo in memoria: si azzerano ricaricando la pagina.
+- Gli sticker di esempio sono emoji; con **+** puoi caricare immagini vere (meglio PNG o WEBP con sfondo trasparente) oppure incollarne una copiata.
+- Quando posti un problema arrivano due risposte simulate, per vedere le notifiche.
+- La ricerca GIPHY usa la chiave in `src/config.js`. Se è vuota, l'app chiede di incollare una chiave, che resta salvata solo su quel telefono o browser.
 
 ## Note per l'app vera
 
