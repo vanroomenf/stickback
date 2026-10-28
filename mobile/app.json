@@ -29,6 +29,9 @@
       ]
     ],
     "scheme": "stickback",
-    "backgroundColor": "#1a1622"
+    "backgroundColor": "#1a1622",
+    "experiments": {
+      "baseUrl": "/stickback/app"
+    }
   }
 }

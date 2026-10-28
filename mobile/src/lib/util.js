@@ -12,3 +12,13 @@ export const rot = (id) => ((id * 7) % 9 - 4) * 1.2 + "deg";
 
 export const nameOf = (users, u) => users[u]?.name || u;
 export const initialOf = (users, u) => nameOf(users, u)[0].toUpperCase();
+
+// "adesso", "5 min", "2 h", "3 g", or a short date
+export function ago(iso) {
+  const s = (Date.now() - new Date(iso).getTime()) / 1000;
+  if (s < 60) return "adesso";
+  if (s < 3600) return `${Math.floor(s / 60)} min`;
+  if (s < 86400) return `${Math.floor(s / 3600)} h`;
+  if (s < 604800) return `${Math.floor(s / 86400)} g`;
+  return new Date(iso).toLocaleDateString("it-IT", { day: "numeric", month: "short" });
+}

@@ -1,15 +1,14 @@
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
-import { ME } from "../data.js";
 import { orderReplies } from "../store.js";
 import { fmt, hue, initialOf } from "../lib/util.js";
 import { C, F } from "../theme.js";
 import { CrownIcon, StarIcon, StickerCard, StickerImage } from "./ui.js";
 
-export default function Profile({ user, users, problems, myStickers, showBack, onBack, onGo, onEdit, onAddStickers, onPaste, onRemoveSticker, topInset }) {
+export default function Profile({ me: myName, user, users, problems, myStickers, showBack, onBack, onGo, onEdit, onAddStickers, onPaste, onRemoveSticker, onSignOut, topInset }) {
   const [tab, setTab] = useState("problemi");
   const { width } = useWindowDimensions();
-  const me = user === ME;
+  const me = user === myName;
   const info = users[user] || { name: user, bio: "Qui solo per gli sticker." };
 
   const probs = problems.filter((p) => p.author === user);
@@ -38,7 +37,12 @@ export default function Profile({ user, users, problems, myStickers, showBack, o
         </View>
       </View>
       {!!info.bio && <Text style={st.bio}>{info.bio}</Text>}
-      {me && <Pressable style={st.editbtn} onPress={onEdit}><Text style={st.editTxt}>Modifica profilo</Text></Pressable>}
+      {me && (
+        <View style={{ flexDirection: "row", gap: 10 }}>
+          <Pressable style={st.editbtn} onPress={onEdit}><Text style={st.editTxt}>Modifica profilo</Text></Pressable>
+          <Pressable style={st.editbtn} onPress={onSignOut}><Text style={[st.editTxt, { color: C.muted }]}>Esci</Text></Pressable>
+        </View>
+      )}
 
       <View style={st.stats}>
         {[["Problemi", probs.length], ["Risposte", replies.length], ["Stelle", fmt(stars)], ["Corone", crowns]].map(([l, v], i) => (
@@ -102,14 +106,14 @@ export default function Profile({ user, users, problems, myStickers, showBack, o
             {myStickers.map((sk) => (
               <View key={sk.v} style={[st.stile, { width: tile, height: tile }]}>
                 <StickerImage sticker={sk} thumb style={{ width: "78%", height: "78%" }} />
-                <Pressable style={st.rm} hitSlop={6} onPress={() => onRemoveSticker(sk.v)} accessibilityLabel="Togli dai tuoi sticker">
+                <Pressable style={st.rm} hitSlop={6} onPress={() => onRemoveSticker(sk)} accessibilityLabel="Togli dai tuoi sticker">
                   <Text style={st.rmTxt}>×</Text>
                 </Pressable>
               </View>
             ))}
           </View>
           <Text style={st.note}>
-            Aggiungi i tuoi sticker dalla galleria, oppure incolla uno sticker copiato (su iPhone: fai uno screenshot, aprilo in Foto, tieni premuto sullo sticker e scegli Copia). Puoi salvare anche quelli che usano gli altri, con il pulsante accanto alla stella. Quelli che trovi già qui all'inizio sono esempi da GIPHY.
+            Aggiungi i tuoi sticker dalla galleria, oppure incolla uno sticker copiato (su iPhone: fai uno screenshot, aprilo in Foto, tieni premuto sullo sticker e scegli Copia). Puoi salvare anche quelli che usano gli altri, con il pulsante accanto alla stella. Finché non ne aggiungi, qui trovi qualche esempio da GIPHY. I tuoi sticker sono salvati nel tuo account, quindi li ritrovi anche su un altro telefono.
           </Text>
         </>
       )}

@@ -26,8 +26,19 @@ jobs:
         with:
           node-version: 22
           cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            mobile/package-lock.json
       - run: npm ci
       - run: npm run build
+      # The phone app (mobile/) also runs in the browser, connected to Supabase, at /stickback/app/
+      - run: npm ci
+        working-directory: mobile
+      - run: npx expo export --platform web --output-dir ../dist/app
+        working-directory: mobile
+        env:
+          EXPO_OFFLINE: "1"
+          EXPO_NO_TELEMETRY: "1"
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

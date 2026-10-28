@@ -1,4 +1,8 @@
-// All app data lives in one reducer: problems, replies, users and your sticker collection.
+// What the app shows: problems with their replies, the people in them, and your sticker collection.
+// Changes are applied here right away (so the app feels instant) and sent to Supabase in parallel.
+import { exampleStickers } from "./data.js";
+
+export const initialState = () => ({ problems: [], users: {}, myStickers: exampleStickers(), loaded: false });
 
 const mapProblem = (state, pid, fn) => ({
   ...state,
@@ -7,8 +11,17 @@ const mapProblem = (state, pid, fn) => ({
 
 const toggle = (o) => ({ ...o, starred: !o.starred, stars: o.stars + (o.starred ? -1 : 1) });
 
+const withoutExamplesOf = (list, stickers) => {
+  const seen = new Set(stickers.map((st) => st.v));
+  return list.filter((st) => !seen.has(st.v));
+};
+
 export function reducer(state, a) {
   switch (a.type) {
+    case "setFeed":
+      return { ...state, problems: a.problems, users: { ...state.users, ...a.users }, loaded: true };
+    case "setUsers":
+      return { ...state, users: { ...state.users, ...a.users } };
     case "starProblem":
       return mapProblem(state, a.pid, toggle);
     case "starReply":
@@ -19,17 +32,16 @@ export function reducer(state, a) {
     case "pickWinner":
       return mapProblem(state, a.pid, (p) => ({ ...p, winner: a.mid }));
     case "addReply":
-      return mapProblem(state, a.pid, (p) => ({ ...p, memes: [...p.memes, a.meme], stars: p.stars + (a.bump || 0) }));
+      return mapProblem(state, a.pid, (p) =>
+        p.memes.some((m) => m.id === a.meme.id) ? p : { ...p, memes: [...p.memes, a.meme] });
     case "addProblem":
-      return { ...state, problems: [a.problem, ...state.problems] };
+      return { ...state, problems: [a.problem, ...state.problems.filter((p) => p.id !== a.problem.id)] };
+    case "setSaved":
+      // your saved stickers first, then the GIPHY examples you haven't saved
+      return { ...state, myStickers: [...a.stickers, ...withoutExamplesOf(exampleStickers(), a.stickers)] };
     case "addStickers": {
       const fresh = a.stickers.map(({ example, ...st }) => st);
-      const seen = new Set(fresh.map((st) => st.v));
-      return { ...state, myStickers: [...fresh, ...state.myStickers.filter((st) => !seen.has(st.v))] };
-    }
-    case "loadSaved": {
-      const seen = new Set(a.stickers.map((st) => st.v));
-      return { ...state, myStickers: [...a.stickers, ...state.myStickers.filter((st) => !seen.has(st.v))] };
+      return { ...state, myStickers: [...fresh, ...withoutExamplesOf(state.myStickers, fresh)] };
     }
     case "removeSticker":
       return { ...state, myStickers: state.myStickers.filter((st) => st.v !== a.v) };

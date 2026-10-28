@@ -1,6 +1,5 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
-import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
-import { ME } from "../data.js";
+import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { orderReplies } from "../store.js";
 import { C, F } from "../theme.js";
 import { Avatar, CrownIcon, SaveIcon, StarButton, StickerCard } from "./ui.js";
@@ -8,8 +7,8 @@ import { Avatar, CrownIcon, SaveIcon, StarButton, StickerCard } from "./ui.js";
 const GAP = 12;
 const SIDE = 20;
 
-function ProblemScreen({ p, first, height, width, users, dispatch, onReply, onUser, focusMid, savedSet, onToggleSave }) {
-  const mine = p.author === ME;
+function ProblemScreen({ me, p, first, height, width, users, dispatch, onReply, onUser, focusMid, savedSet, onToggleSave }) {
+  const mine = p.author === me;
   const listRef = useRef(null);
   const [index, setIndex] = useState(0);
   const [carH, setCarH] = useState(0);
@@ -73,7 +72,7 @@ function ProblemScreen({ p, first, height, width, users, dispatch, onReply, onUs
               <CrownIcon /><Text style={st.pickTxt}>Scegli</Text>
             </Pressable>
           )}
-          {m.author !== ME && (
+          {m.author !== me && (
             <Pressable onPress={() => onToggleSave(m.sticker)} hitSlop={6}
               accessibilityLabel={saved ? "Togli dai tuoi sticker" : "Salva nei tuoi sticker"}
               style={[st.save, saved && { backgroundColor: C.fg, borderColor: C.fg }]}>
@@ -141,7 +140,7 @@ function ProblemScreen({ p, first, height, width, users, dispatch, onReply, onUs
   );
 }
 
-const Feed = forwardRef(function Feed({ problems, topInset, ...rest }, ref) {
+const Feed = forwardRef(function Feed({ problems, topInset, refreshing, onRefresh, ...rest }, ref) {
   const listRef = useRef(null);
   const [box, setBox] = useState({ w: 0, h: 0 });
 
@@ -169,6 +168,7 @@ const Feed = forwardRef(function Feed({ problems, topInset, ...rest }, ref) {
             </View>
           )}
           windowSize={3}
+          refreshControl={<RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} tintColor={C.accent} progressViewOffset={topInset} />}
         />
       )}
     </View>

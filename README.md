@@ -93,6 +93,18 @@ Poi inquadra il QR code con la fotocamera (iPhone) o con l'app Expo Go (Android)
 
 Struttura: `mobile/App.js` carica i font e avvia `mobile/src/StickbackApp.js`; le schermate sono in `mobile/src/components/`. `store.js`, `data.js` e la ricerca GIPHY sono le stesse del sito, adattate al telefono.
 
+## Server (Supabase)
+
+L'app in `mobile/` usa **Supabase** per account, problemi, risposte, stelle, corone, sticker salvati e caricati, e risposte in tempo reale. La versione web della stessa app è su **https://vanroomenf.github.io/stickback/app/**. Il sito principale resta il prototipo con dati di esempio.
+
+Configurazione, una volta sola:
+
+1. Supabase → **SQL Editor** → **New query**: incolla tutto `supabase/migrations/0001_stickback.sql` e premi **Run**. Crea tabelle, regole di sicurezza (RLS), lo spazio `stickers` per le immagini e il tempo reale.
+2. Per provare senza email di conferma: **Authentication → Sign In / Providers → Email** e disattiva **Confirm email**. Prima del lancio va riattivato.
+3. URL e chiave pubblica sono in `mobile/src/config.js`. La chiave secret / service_role non va mai nell'app.
+
+Regole di sicurezza principali: per leggere bisogna aver fatto l'accesso; ognuno pubblica, mette stelle e salva sticker solo a nome proprio; solo l'autore sceglie la risposta migliore e il testo del problema non si modifica; ognuno carica immagini solo nella propria cartella.
+
 ## Prossimi passi per l'app negli store
 
 - **Condividi → Stickback anche su iPhone**: con una Share Extension nell'app nativa.
