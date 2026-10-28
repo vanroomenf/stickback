@@ -34,9 +34,11 @@ Nel prototipo:
 ## Note per l'app vera
 
 **Sticker da WhatsApp.** iOS e Android non permettono a un'altra app di leggere la raccolta di sticker di WhatsApp. Le strade praticabili sono:
-- copia e incolla (su iPhone: tieni premuto lo sticker → Copia);
-- condivisione verso Stickback dal menu "Condividi" del telefono (share extension su iOS, intent di condivisione su Android);
-- importazione dalla galleria o dai file.
+- su Android, importazione in blocco della cartella dove WhatsApp salva gli sticker ricevuti (file WEBP);
+- su iPhone WhatsApp non permette di copiare gli sticker: si può fare uno screenshot, aprirlo in Foto, tenere premuto sullo sticker → Copia (iOS ritaglia il soggetto) e incollarlo in Stickback;
+- importazione dalla galleria o dai file;
+- un pulsante "Salva" sugli sticker usati nelle risposte, così gli sticker girano tra gli utenti dentro l'app;
+- ricerca di sticker e GIF su GIPHY (già nel prototipo).
 
 **Feed.** Va ordinato in modo che i problemi nuovi ricevano risposte: mescolare post recenti con poche risposte, post molto votati e post degli amici.
 
