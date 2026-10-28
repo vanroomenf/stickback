@@ -3,7 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } fr
 import { orderReplies } from "../store.js";
 import { fmt, hue, initialOf } from "../lib/util.js";
 import { C, F } from "../theme.js";
-import { CrownIcon, StarIcon, StickerCard, StickerImage } from "./ui.js";
+import { StarIcon, StickerCard, StickerImage } from "./ui.js";
 
 export default function Profile({ me: myName, user, users, problems, myStickers, showBack, onBack, onGo, onEdit, onAddStickers, onPaste, onRemoveSticker, onSignOut, topInset }) {
   const [tab, setTab] = useState("problemi");
@@ -14,7 +14,6 @@ export default function Profile({ me: myName, user, users, problems, myStickers,
   const probs = problems.filter((p) => p.author === user);
   const replies = problems.flatMap((p) => p.memes.filter((m) => m.author === user).map((m) => ({ p, m })));
   const stars = probs.reduce((a, p) => a + p.stars, 0) + replies.reduce((a, r) => a + r.m.stars, 0);
-  const crowns = replies.filter((r) => r.p.winner === r.m.id).length;
   const tabs = [["problemi", "Problemi"], ["risposte", "Risposte"], ...(me ? [["sticker", "Sticker"]] : [])];
 
   const inner = Math.min(width, 520) - 40;
@@ -45,9 +44,9 @@ export default function Profile({ me: myName, user, users, problems, myStickers,
       )}
 
       <View style={st.stats}>
-        {[["Problemi", probs.length], ["Risposte", replies.length], ["Stelle", fmt(stars)], ["Corone", crowns]].map(([l, v], i) => (
+        {[["Problemi", probs.length], ["Risposte", replies.length], ["Stelle", fmt(stars)]].map(([l, v], i) => (
           <View key={l} style={st.stat}>
-            <Text style={[st.statNum, i === 3 && { color: C.accent }]}>{v}</Text>
+            <Text style={[st.statNum, i === 2 && { color: C.accent }]}>{v}</Text>
             <Text style={st.statLbl}>{l.toUpperCase()}</Text>
           </View>
         ))}
@@ -86,7 +85,6 @@ export default function Profile({ me: myName, user, users, problems, myStickers,
               <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
                 <StarIcon filled size={13} color={C.accent} />
                 <Text style={st.gold}>{fmt(m.stars)}</Text>
-                {p.winner === m.id && <><CrownIcon /><Text style={st.gold}>Migliore</Text></>}
               </View>
               <Text style={st.small} numberOfLines={2}>su: {p.text}</Text>
             </Pressable>

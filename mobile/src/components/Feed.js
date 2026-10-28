@@ -2,7 +2,7 @@ import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState }
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { orderReplies } from "../store.js";
 import { C, F } from "../theme.js";
-import { Avatar, CrownIcon, SaveIcon, StarButton, StickerCard } from "./ui.js";
+import { Avatar, SaveIcon, StarButton, StickerCard } from "./ui.js";
 
 const GAP = 12;
 const SIDE = 20;
@@ -14,8 +14,8 @@ function ProblemScreen({ me, p, first, height, width, users, dispatch, onReply, 
   const [carH, setCarH] = useState(0);
   const lastTap = useRef({ id: null, t: 0 });
 
-  // Stable order while you star things; it only changes when replies or the winner change
-  const orderKey = `${p.memes.length}|${p.winner}`;
+  // Stable order while you star things; it only changes when new replies arrive
+  const orderKey = `${p.memes.length}`;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const ordered = useMemo(() => orderReplies(p).map((m) => m.id), [orderKey]);
   const byId = Object.fromEntries(p.memes.map((m) => [m.id, m]));
@@ -24,9 +24,21 @@ function ProblemScreen({ me, p, first, height, width, users, dispatch, onReply, 
   const cardW = Math.max(120, Math.min(width * 0.78, carH - 50));
   const step = cardW + GAP;
 
+  // Where each reply stops when you swipe: the first sits on the left, the last on the right,
+  // every reply in between is centred on the screen
+  const n = memes.length;
+  const maxX = Math.max(0, SIDE * 2 + n * cardW + (n - 1) * GAP - width);
+  const offsets = memes.map((_, i) => {
+    if (i === 0) return 0;
+    if (i === n - 1) return maxX;
+    return Math.min(maxX, Math.max(0, SIDE + i * step - (width - cardW) / 2));
+  });
+  const nearest = (x) => offsets.reduce((best, o, i) => (Math.abs(o - x) < Math.abs(offsets[best] - x) ? i : best), 0);
+
   const goTo = (i) => {
-    listRef.current?.scrollToOffset({ offset: Math.max(0, i) * step, animated: true });
-    setIndex(Math.max(0, Math.min(i, memes.length - 1)));
+    const k = Math.max(0, Math.min(i, n - 1));
+    listRef.current?.scrollToOffset({ offset: offsets[k] ?? 0, animated: true });
+    setIndex(k);
   };
 
   // Jump to a reply after publishing or when coming from the profile
@@ -36,14 +48,6 @@ function ProblemScreen({ me, p, first, height, width, users, dispatch, onReply, 
     if (i >= 0) setTimeout(() => goTo(i), 60);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusMid, carH]);
-
-  // The winner moves to the first place: show it
-  const mounted = useRef(false);
-  useEffect(() => {
-    if (!mounted.current) { mounted.current = true; return; }
-    goTo(0);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [p.winner]);
 
   const doubleTap = (m) => {
     const now = Date.now();
@@ -64,14 +68,6 @@ function ProblemScreen({ me, p, first, height, width, users, dispatch, onReply, 
           <Pressable style={{ flex: 1, minWidth: 0 }} onPress={() => onUser(m.author)}>
             <Text style={st.who} numberOfLines={1}>@{m.author}</Text>
           </Pressable>
-          {p.winner === m.id && (
-            <View style={st.win}><CrownIcon /><Text style={st.winTxt}>Migliore</Text></View>
-          )}
-          {mine && p.winner !== m.id && (
-            <Pressable style={st.pick} onPress={() => dispatch({ type: "pickWinner", pid: p.id, mid: m.id })}>
-              <CrownIcon /><Text style={st.pickTxt}>Scegli</Text>
-            </Pressable>
-          )}
           {m.author !== me && (
             <Pressable onPress={() => onToggleSave(m.sticker)} hitSlop={6}
               accessibilityLabel={saved ? "Togli dai tuoi sticker" : "Salva nei tuoi sticker"}
@@ -113,11 +109,13 @@ function ProblemScreen({ me, p, first, height, width, users, dispatch, onReply, 
             keyExtractor={(m) => String(m.id)}
             renderItem={renderCard}
             showsHorizontalScrollIndicator={false}
-            snapToInterval={step}
+            snapToOffsets={offsets}
+            snapToStart
+            snapToEnd
             decelerationRate="fast"
             disableIntervalMomentum
             contentContainerStyle={{ paddingHorizontal: SIDE, gap: GAP, alignItems: "center" }}
-            onScroll={(e) => setIndex(Math.min(memes.length - 1, Math.max(0, Math.round(e.nativeEvent.contentOffset.x / step))))}
+            onScroll={(e) => setIndex(nearest(e.nativeEvent.contentOffset.x))}
             scrollEventThrottle={32}
             nestedScrollEnabled
           />
@@ -190,10 +188,6 @@ const st = StyleSheet.create({
   ptext: { flex: 1, color: C.fg, fontFamily: F.display, fontSize: 23, lineHeight: 27, letterSpacing: -0.3 },
   meta: { flexDirection: "row", alignItems: "center", gap: 8, minHeight: 32 },
   who: { color: C.muted, fontFamily: F.body, fontSize: 13 },
-  win: { flexDirection: "row", alignItems: "center", gap: 4 },
-  winTxt: { color: C.accent, fontFamily: F.bold, fontSize: 12 },
-  pick: { flexDirection: "row", alignItems: "center", gap: 4, borderWidth: 1, borderStyle: "dashed", borderColor: C.accent, borderRadius: 99, paddingHorizontal: 10, paddingVertical: 5 },
-  pickTxt: { color: C.accent, fontFamily: F.semi, fontSize: 12 },
   save: { width: 34, height: 31, borderRadius: 99, backgroundColor: C.surface, borderWidth: 1, borderColor: C.line, alignItems: "center", justifyContent: "center" },
   empty: { borderWidth: 2, borderStyle: "dashed", borderColor: C.line, borderRadius: 16, alignItems: "center", justifyContent: "center", padding: 24, gap: 6 },
   emptyTitle: { color: C.fg, fontFamily: F.display, fontSize: 18, textAlign: "center" },

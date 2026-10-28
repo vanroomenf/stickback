@@ -137,7 +137,7 @@ export default function StickbackApp({ userId }) {
     if (!st.example) api.removeSavedSticker(st.v).catch(oops);
   };
 
-  // ───────── Stars and best reply (instant on screen, then saved) ─────────
+  // ───────── Stars (instant on screen, then saved) ─────────
   const act = (a) => {
     dispatch(a);
     if (a.type === "starProblem") {
@@ -146,9 +146,6 @@ export default function StickbackApp({ userId }) {
     } else if (a.type === "starReply") {
       const m = problemsRef.current.find((x) => x.id === a.pid)?.memes.find((x) => x.id === a.mid);
       api.setReplyStar(a.mid, !m.starred).catch(() => { dispatch(a); oops(); });
-    } else if (a.type === "pickWinner") {
-      const before = problemsRef.current.find((x) => x.id === a.pid)?.winner ?? null;
-      api.pickWinner(a.pid, a.mid).catch(() => { dispatch({ type: "pickWinner", pid: a.pid, mid: before }); oops(); });
     }
   };
 
@@ -186,7 +183,7 @@ export default function StickbackApp({ userId }) {
     setSheet(null);
     try {
       const row = await api.createProblem(text);
-      dispatch({ type: "addProblem", problem: { id: row.id, author: me, time: "adesso", stars: 0, starred: false, text, winner: null, memes: [] } });
+      dispatch({ type: "addProblem", problem: { id: row.id, author: me, time: "adesso", stars: 0, starred: false, text, memes: [] } });
       setView("feed");
       setTimeout(() => feedRef.current?.scrollToProblem(row.id), 50);
       say("Problema pubblicato");

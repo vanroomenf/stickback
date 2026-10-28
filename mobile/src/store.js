@@ -29,8 +29,6 @@ export function reducer(state, a) {
         ...p,
         memes: p.memes.map((m) => (m.id === a.mid ? toggle(m) : m)),
       }));
-    case "pickWinner":
-      return mapProblem(state, a.pid, (p) => ({ ...p, winner: a.mid }));
     case "addReply":
       return mapProblem(state, a.pid, (p) =>
         p.memes.some((m) => m.id === a.meme.id) ? p : { ...p, memes: [...p.memes, a.meme] });
@@ -52,6 +50,5 @@ export function reducer(state, a) {
   }
 }
 
-// Winner first, then most stars
-export const orderReplies = (p) =>
-  [...p.memes].sort((a, b) => (b.id === p.winner) - (a.id === p.winner) || b.stars - a.stars);
+// Most stars first
+export const orderReplies = (p) => [...p.memes].sort((a, b) => b.stars - a.stars);

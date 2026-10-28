@@ -78,7 +78,7 @@ Una prima ricerca non ha trovato app o social chiamati Stickback. Il nome compar
 
 ## App per telefono (React Native)
 
-La cartella `mobile/` contiene Stickback come app vera, fatta con **Expo** (SDK 58) e React Native. Ha le stesse funzioni del sito: feed, risposte con sticker e GIF, stelle, corona, sticker personali salvati sul telefono, salvataggio degli sticker degli altri e ricerca GIPHY. In più può aprire la galleria e incollare uno sticker copiato.
+La cartella `mobile/` contiene Stickback come app vera, fatta con **Expo** (SDK 58) e React Native. Ha le stesse funzioni del sito: feed, risposte con sticker e GIF, stelle, sticker personali, salvataggio degli sticker degli altri e ricerca GIPHY. In più può aprire la galleria e incollare uno sticker copiato.
 
 Per provarla con **Expo Go**:
 
@@ -95,7 +95,7 @@ Struttura: `mobile/App.js` carica i font e avvia `mobile/src/StickbackApp.js`; l
 
 ## Server (Supabase)
 
-L'app in `mobile/` usa **Supabase** per account, problemi, risposte, stelle, corone, sticker salvati e caricati, e risposte in tempo reale. La versione web della stessa app è su **https://vanroomenf.github.io/stickback/app/**. Il sito principale resta il prototipo con dati di esempio.
+L'app in `mobile/` usa **Supabase** per account, problemi, risposte, stelle, sticker salvati e caricati, e risposte in tempo reale. La versione web della stessa app è su **https://vanroomenf.github.io/stickback/app/**. Il sito principale resta il prototipo con dati di esempio.
 
 Configurazione, una volta sola:
 
@@ -103,7 +103,7 @@ Configurazione, una volta sola:
 2. Per provare senza email di conferma: **Authentication → Sign In / Providers → Email** e disattiva **Confirm email**. Prima del lancio va riattivato.
 3. URL e chiave pubblica sono in `mobile/src/config.js`. La chiave secret / service_role non va mai nell'app.
 
-Regole di sicurezza principali: per leggere bisogna aver fatto l'accesso; ognuno pubblica, mette stelle e salva sticker solo a nome proprio; solo l'autore sceglie la risposta migliore e il testo del problema non si modifica; ognuno carica immagini solo nella propria cartella.
+Regole di sicurezza principali: per leggere bisogna aver fatto l'accesso; ognuno pubblica, mette stelle e salva sticker solo a nome proprio; il testo dei problemi non si modifica dopo la pubblicazione; ognuno carica immagini solo nella propria cartella.
 
 ## Prossimi passi per l'app negli store
 

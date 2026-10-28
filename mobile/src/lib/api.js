@@ -14,7 +14,7 @@ const fail = (error) => { if (error) throw error; };
 export async function loadFeed(uid) {
   const { data, error } = await supabase
     .from("problems")
-    .select(`id, text, created_at, winner_reply_id,
+    .select(`id, text, created_at,
       author:profiles!problems_author_id_fkey(${PROFILE}),
       problem_stars(count),
       replies!replies_problem_id_fkey(id, caption, sticker, created_at,
@@ -42,7 +42,6 @@ export async function loadFeed(uid) {
     author: keep(p.author),
     time: ago(p.created_at),
     text: p.text,
-    winner: p.winner_reply_id,
     stars: p.problem_stars?.[0]?.count ?? 0,
     starred: starredP.has(p.id),
     memes: [...p.replies]
@@ -86,11 +85,6 @@ export async function setReplyStar(rid, on) {
   const q = supabase.from("reply_stars");
   const { error } = on ? await q.insert({ reply_id: rid }) : await q.delete().eq("reply_id", rid).eq("user_id", (await me()).id);
   if (error && error.code !== "23505") throw error;
-}
-
-export async function pickWinner(pid, rid) {
-  const { error } = await supabase.from("problems").update({ winner_reply_id: rid }).eq("id", pid);
-  fail(error);
 }
 
 export async function createProblem(text) {

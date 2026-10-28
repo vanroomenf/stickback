@@ -18,14 +18,6 @@ export function StarIcon({ filled, size = 16, color }) {
   );
 }
 
-export function CrownIcon({ size = 14, color = C.accent }) {
-  return (
-    <Svg viewBox="0 0 24 24" width={size} height={size}>
-      <Path d="M3 18h18l-1.6-10-4.9 4.4L12 5l-2.5 7.4L4.6 8z" fill={color} />
-    </Svg>
-  );
-}
-
 export function SaveIcon({ saved, color }) {
   const book = "M6 3h12a1 1 0 0 1 1 1v17l-7-4.5L5 21V4a1 1 0 0 1 1-1z";
   return saved ? (
