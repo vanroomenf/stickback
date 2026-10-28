@@ -1,0 +1,34 @@
+{
+  "expo": {
+    "name": "Stickback",
+    "slug": "stickback",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "ios": {
+      "supportsTablet": false
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#1a1622",
+        "foregroundImage": "./assets/android-icon-foreground.png"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-image",
+      "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Stickback usa la galleria per aggiungere i tuoi sticker."
+        }
+      ]
+    ],
+    "scheme": "stickback",
+    "backgroundColor": "#1a1622"
+  }
+}

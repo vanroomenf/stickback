@@ -76,6 +76,23 @@ Una prima ricerca non ha trovato app o social chiamati Stickback. Il nome compar
 - [ ] handle `@stickback` su Instagram e TikTok
 - [ ] nome libero su App Store e Google Play
 
+## App per telefono (React Native)
+
+La cartella `mobile/` contiene Stickback come app vera, fatta con **Expo** (SDK 58) e React Native. Ha le stesse funzioni del sito: feed, risposte con sticker e GIF, stelle, corona, sticker personali salvati sul telefono, salvataggio degli sticker degli altri e ricerca GIPHY. In più può aprire la galleria e incollare uno sticker copiato.
+
+Per provarla con **Expo Go**:
+
+```bash
+cd mobile
+npm install
+npx expo start          # stessa rete Wi-Fi del telefono
+npx expo start --tunnel # se il telefono è su un'altra rete
+```
+
+Poi inquadra il QR code con la fotocamera (iPhone) o con l'app Expo Go (Android).
+
+Struttura: `mobile/App.js` carica i font e avvia `mobile/src/StickbackApp.js`; le schermate sono in `mobile/src/components/`. `store.js`, `data.js` e la ricerca GIPHY sono le stesse del sito, adattate al telefono.
+
 ## Prossimi passi per l'app negli store
 
 - **Condividi → Stickback anche su iPhone**: con una Share Extension nell'app nativa.
