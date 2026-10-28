@@ -29,6 +29,7 @@ export async function loadLanguage() {
     const saved = await AsyncStorage.getItem(KEY);
     if (saved && DICTS[saved]) { chosen = saved; current = saved; }
   } catch { /* keep the phone's language */ }
+  await loadFeedLanguages();
 }
 
 // code = "it" | "en" | "de" | "fr", or null to follow the phone again
@@ -41,6 +42,24 @@ export async function setLanguage(code) {
 export function onLanguageChange(fn) {
   listeners.add(fn);
   return () => listeners.delete(fn);
+}
+
+// Languages of the problems you see in the feed. Until you pick them, it's the app's language,
+// so you only get jokes you understand.
+const FEED_KEY = "stickback.feedLangs";
+let feedLangs = null; // null = just the app's language
+export const feedLanguages = () => feedLangs || [current];
+export async function loadFeedLanguages() {
+  try {
+    const saved = JSON.parse((await AsyncStorage.getItem(FEED_KEY)) || "null");
+    if (Array.isArray(saved) && saved.length && saved.every((c) => DICTS[c])) feedLangs = saved;
+  } catch { /* keep the default */ }
+}
+export async function setFeedLanguages(list) {
+  const clean = LANGUAGES.map(([c]) => c).filter((c) => list.includes(c));
+  feedLangs = clean.length ? clean : null;
+  try { feedLangs ? await AsyncStorage.setItem(FEED_KEY, JSON.stringify(feedLangs)) : await AsyncStorage.removeItem(FEED_KEY); } catch { /* fine */ }
+  return feedLanguages();
 }
 
 // t("toast.newReply", { user: "luca" }) → "@luca ha risposto al tuo problema"

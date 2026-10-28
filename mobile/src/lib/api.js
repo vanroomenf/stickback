@@ -18,8 +18,11 @@ export const categories = () => CATEGORY_KEYS.map((k) => [k, t(`cat.${k}`)]);
 export const categoryLabel = (k) => t(`cat.${CATEGORY_KEYS.includes(k) ? k : "altro"}`);
 
 // One feed for everyone: a mix of fresh problems, the most starred, and the ones that still need replies
-export async function loadFeed(uid, { category = null } = {}) {
-  const { data: ranked, error: rankError } = await supabase.rpc("feed_for_you", { cat: category, lim: 40, skip: 0 });
+// langs: the languages of the problems to show, e.g. ["it", "en"]
+export async function loadFeed(uid, { category = null, langs = null } = {}) {
+  let { data: ranked, error: rankError } = await supabase.rpc("feed_for_you", { cat: category, langs, lim: 40, skip: 0 });
+  // database without migration 0005 yet: the old feed, all languages
+  if (rankError?.code === "PGRST202") ({ data: ranked, error: rankError } = await supabase.rpc("feed_for_you", { cat: category, lim: 40, skip: 0 }));
   fail(rankError);
   const ids = ranked.map((r) => r.id);
   return loadProblems(uid, ids);
@@ -30,7 +33,8 @@ async function loadProblems(uid, ids) {
   if (!ids.length) return { problems: [], users: {} };
   const { data: rows, error } = await supabase
     .from("problems")
-    .select(`id, text, created_at, category,
+    // * includes "lang" once migration 0005 is in, without breaking before
+    .select(`*,
       author:profiles!problems_author_id_fkey(${PROFILE}),
       problem_stars(count),
       replies!replies_problem_id_fkey(id, caption, sticker, created_at,
@@ -60,6 +64,7 @@ async function loadProblems(uid, ids) {
     time: ago(p.created_at),
     text: p.text,
     category: p.category,
+    lang: p.lang ?? "it",
     stars: p.problem_stars?.[0]?.count ?? 0,
     starred: starredP.has(p.id),
     memes: [...p.replies]
@@ -117,8 +122,10 @@ export async function setReplyStar(rid, on) {
   if (error && error.code !== "23505") throw error;
 }
 
-export async function createProblem(text, category = "altro") {
-  const { data, error } = await supabase.from("problems").insert({ text, category }).select("id, created_at").single();
+export async function createProblem(text, category = "altro", lang = "it") {
+  let { data, error } = await supabase.from("problems").insert({ text, category, lang }).select("id, created_at").single();
+  // database without migration 0005 yet: post without the language
+  if (error?.code === "PGRST204") ({ data, error } = await supabase.from("problems").insert({ text, category }).select("id, created_at").single());
   fail(error);
   return data;
 }

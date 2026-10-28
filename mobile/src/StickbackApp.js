@@ -13,7 +13,7 @@ import { EditProfileSheet, ProblemSheet, ReplySheet } from "./components/Sheets.
 import { Avatar, HomeIcon, Toast } from "./components/ui.js";
 import { ConfirmSheet, MoreSheet, ReportSheet, SettingsSheet, TermsGate } from "./components/Safety.js";
 import { FeedHeader, TOPBAR_HEIGHT } from "./components/Social.js";
-import { t, tn } from "./i18n/index.js";
+import { feedLanguages, lang, setFeedLanguages, t, tn } from "./i18n/index.js";
 
 
 export default function StickbackApp({ userId }) {
@@ -38,6 +38,7 @@ export default function StickbackApp({ userId }) {
   const [ask, setAsk] = useState(null); // "are you sure?" before deleting: { title, text, confirm, run }
   const [settings, setSettings] = useState(false);
   const [category, setCategory] = useState(null);
+  const [feedLangs, setFeedLangs] = useState(feedLanguages); // languages of the problems in your feed
   const [postsVersion, setPostsVersion] = useState(0); // bumps when you delete or post, so the profile reloads
   const feedRef = useRef(null);
   const problemsRef = useRef(problems);
@@ -52,14 +53,14 @@ export default function StickbackApp({ userId }) {
   // ───────── Loading ─────────
   const refresh = useCallback(async () => {
     try {
-      const { problems: ps, users: us } = await api.loadFeed(userId, { category });
+      const { problems: ps, users: us } = await api.loadFeed(userId, { category, langs: feedLangs });
       dispatch({ type: "setFeed", problems: ps, users: us });
       setLoadError(false);
     } catch {
       setLoadError(true);
       say(t("toast.loadFail"));
     }
-  }, [userId, say, category]);
+  }, [userId, say, category, feedLangs]);
 
   useEffect(() => { refresh(); }, [refresh]);
 
@@ -216,11 +217,11 @@ export default function StickbackApp({ userId }) {
     }
   };
 
-  const publishProblem = async (text, cat) => {
+  const publishProblem = async (text, cat, postLang) => {
     setSheet(null);
     try {
-      const row = await api.createProblem(text, cat);
-      dispatch({ type: "addProblem", problem: { id: row.id, author: me, time: "adesso", stars: 0, starred: false, text, category: cat, memes: [] } });
+      const row = await api.createProblem(text, cat, postLang);
+      dispatch({ type: "addProblem", problem: { id: row.id, author: me, time: t("time.now"), stars: 0, starred: false, text, category: cat, lang: postLang, memes: [] } });
       setPostsVersion((n) => n + 1);
       setView("feed");
       setTimeout(() => feedRef.current?.scrollToProblem(row.id), 50);
@@ -331,7 +332,7 @@ export default function StickbackApp({ userId }) {
       <View style={{ flex: 1 }}>
         <View style={[StyleSheet.absoluteFill, view !== "feed" && st.hidden]} pointerEvents={view === "feed" ? "auto" : "none"}>
           {problems.length ? (
-            <Feed key={`feed-${category}`} ref={feedRef} me={me} problems={problems} users={users} dispatch={act} focus={focus} topInset={topInset}
+            <Feed key={`feed-${category}-${feedLangs.join()}`} showLang={feedLangs.length > 1 ? lang() : null} ref={feedRef} me={me} problems={problems} users={users} dispatch={act} focus={focus} topInset={topInset}
               refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await refresh(); setRefreshing(false); }}
               onReply={(pid) => { setLastAdded(null); setSheet({ kind: "reply", pid }); }}
               onUser={(u) => openProfile(u, true)} onMore={setMore} savedSet={savedSet} onToggleSave={toggleSave} />
@@ -396,7 +397,8 @@ export default function StickbackApp({ userId }) {
         text={t("ask.blockText")}
         onClose={() => setBlockTarget(null)} onConfirm={doBlock} />
       <SettingsSheet visible={settings} loadBlocked={api.loadBlocked} onUnblock={unblock} onClose={() => setSettings(false)}
-        onSignOut={() => { setSettings(false); signOut(); }} onDeleteAccount={deleteAccount} />
+        onSignOut={() => { setSettings(false); signOut(); }} onDeleteAccount={deleteAccount}
+        onFeedLanguages={async (list) => setFeedLangs(await setFeedLanguages(list))} />
       <EditProfileSheet visible={sheet?.kind === "edit"} profile={users[me] || { name: "", bio: "" }} onClose={close} onSave={saveProfile} />
     </View>
   );

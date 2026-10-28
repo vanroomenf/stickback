@@ -146,6 +146,7 @@ L'app in `mobile/` è in **italiano, inglese, tedesco e francese**. Segue la lin
 - Testi: `mobile/src/i18n/it.js` (riferimento), `en.js`, `de.js`, `fr.js`. Ogni file ha le stesse chiavi; nel codice si usa `t("chiave")`.
 - Numeri di aiuto nelle segnalazioni: scelti in base al paese del telefono (Svizzera, Italia, Germania, Austria, Francia, Regno Unito, Stati Uniti), altrimenti findahelpline.com. Sono in `mobile/src/i18n/index.js`.
 - Regole e privacy in 4 lingue: si generano con `python3 scripts/legal_pages.py` (i testi stanno nello script). Italiano in `public/regole.html` e `public/privacy.html`, le altre in `public/en/`, `public/de/`, `public/fr/`.
+- **Post nella tua lingua** (migrazione `supabase/migrations/0005_languages.sql`): ogni problema ha una lingua, scelta quando lo pubblichi (di default quella dell'app). Il feed mostra solo i problemi nella lingua dell'app; da Impostazioni → Lingue dei post se ne possono aggiungere altre. I problemi pubblicati prima della migrazione sono segnati come italiani. Finché la migrazione non è eseguita, l'app mostra tutte le lingue.
 - Il testo che chiede il permesso per le foto è tradotto in `mobile/locales/`; vale nell'app installata dagli store, non in Expo Go.
 
 ## Prossimi passi per l'app negli store

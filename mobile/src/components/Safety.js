@@ -4,7 +4,7 @@ import { ActivityIndicator, Linking, Pressable, ScrollView, StyleSheet, Text, Te
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { reportReasons } from "../lib/api.js";
 import { MIN_AGE, ageFrom } from "../lib/util.js";
-import { LANGUAGES, chosenLanguage, helplines, privacyUrl, rulesUrl, setLanguage, t } from "../i18n/index.js";
+import { LANGUAGES, chosenLanguage, feedLanguages, helplines, privacyUrl, rulesUrl, setLanguage, t } from "../i18n/index.js";
 import { C, F } from "../theme.js";
 import { Primary, Sheet } from "./ui.js";
 
@@ -179,7 +179,16 @@ function HelpNumbers() {
   );
 }
 
-export function SettingsSheet({ visible, loadBlocked, onUnblock, onDeleteAccount, onSignOut, onClose }) {
+export function SettingsSheet({ visible, loadBlocked, onUnblock, onDeleteAccount, onSignOut, onClose, onFeedLanguages }) {
+  const [feedLangs, setFeedLangs] = useState(feedLanguages);
+  useEffect(() => { if (visible) setFeedLangs(feedLanguages()); }, [visible]);
+  // at least one language stays on
+  const toggleFeedLang = (code) => {
+    const next = feedLangs.includes(code) ? feedLangs.filter((c) => c !== code) : [...feedLangs, code];
+    if (!next.length) return;
+    setFeedLangs(next);
+    onFeedLanguages(next);
+  };
   const [blocked, setBlocked] = useState(null);
   const chosen = chosenLanguage();
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -200,6 +209,20 @@ export function SettingsSheet({ visible, loadBlocked, onUnblock, onDeleteAccount
               <Text style={[st.langTxt, chosen === code && { color: C.bg }]}>{label}</Text>
             </Pressable>
           ))}
+        </View>
+
+        <Text style={[st.lab, { marginTop: 8 }]}>{t("settings.feedLangs")}</Text>
+        <Text style={st.rowHint}>{t("settings.feedLangsHint")}</Text>
+        <View style={st.langs}>
+          {LANGUAGES.map(([code, label]) => {
+            const on = feedLangs.includes(code);
+            return (
+              <Pressable key={code} onPress={() => toggleFeedLang(code)} style={[st.lang, on && st.langOn]}
+                accessibilityRole="checkbox" accessibilityState={{ checked: on }}>
+                <Text style={[st.langTxt, on && { color: C.bg }]}>{on ? "✓ " : ""}{label}</Text>
+              </Pressable>
+            );
+          })}
         </View>
 
         <Text style={[st.lab, { marginTop: 8 }]}>{t("settings.blocked")}</Text>

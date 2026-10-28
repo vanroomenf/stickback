@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { searchGiphy } from "../lib/giphy.js";
 import { categories } from "../lib/api.js";
-import { t } from "../i18n/index.js";
+import { LANGUAGES, lang, t } from "../i18n/index.js";
 import { nextId } from "../lib/util.js";
 import { C, F } from "../theme.js";
 import { Primary, Sheet, StickerCard, StickerImage } from "./ui.js";
@@ -128,7 +128,8 @@ export function ReplySheet({ visible, problem, myStickers, lastAdded, onClose, o
 export function ProblemSheet({ visible, onClose, onPublish }) {
   const [text, setText] = useState("");
   const [cat, setCat] = useState("altro");
-  useEffect(() => { if (visible) { setText(""); setCat("altro"); } }, [visible]);
+  const [postLang, setPostLang] = useState(lang());
+  useEffect(() => { if (visible) { setText(""); setCat("altro"); setPostLang(lang()); } }, [visible]);
   return (
     <Sheet visible={visible} title={t("problem.title")} onClose={onClose}>
       <Text style={st.sub}>{t("problem.sub")}</Text>
@@ -149,7 +150,17 @@ export function ProblemSheet({ visible, onClose, onPublish }) {
           ))}
         </View>
       </View>
-      <Primary label={t("publish")} disabled={!text.trim()} onPress={() => onPublish(text.trim(), cat)} />
+      <View style={{ gap: 8 }}>
+        <Text style={st.lab}>{t("problem.lang")}</Text>
+        <View style={st.cats}>
+          {LANGUAGES.map(([k, l]) => (
+            <Pressable key={k} onPress={() => setPostLang(k)} style={[st.cat, postLang === k && st.catOn]} accessibilityRole="radio" accessibilityState={{ selected: postLang === k }}>
+              <Text style={[st.catTxt, postLang === k && { color: C.bg }]}>{l}</Text>
+            </Pressable>
+          ))}
+        </View>
+      </View>
+      <Primary label={t("publish")} disabled={!text.trim()} onPress={() => onPublish(text.trim(), cat, postLang)} />
     </Sheet>
   );
 }
