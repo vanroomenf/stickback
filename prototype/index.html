@@ -185,6 +185,25 @@ img.sticker{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;
 .chip.add{border:2px dashed var(--line);color:var(--muted);font-size:22px;cursor:pointer}
 .chip.add:hover{border-color:var(--accent);color:var(--fg)}
 .small{font-size:12px;color:var(--muted);margin:0;line-height:1.4}
+/* source switch + GIPHY picker */
+.srcseg{display:flex;gap:4px;background:var(--bg);padding:4px;border-radius:12px}
+.srcseg button{flex:1;padding:8px 4px;border-radius:9px;font-weight:600;font-size:13px;color:var(--muted)}
+.srcseg button.on{background:var(--surface);color:var(--fg);box-shadow:0 0 0 1px var(--line)}
+.ggrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;max-height:min(260px,34vh);overflow-y:auto;overscroll-behavior:contain}
+.gitem{aspect-ratio:1;border-radius:10px;background:var(--bg);border:2px solid transparent;overflow:hidden}
+.gitem img{width:100%;height:100%;object-fit:contain;display:block}
+.gitem.gif img{object-fit:cover}
+.gitem.on{border-color:var(--accent)}
+.gmsg{grid-column:1/-1;color:var(--muted);font-size:13px;line-height:1.45;text-align:center;padding:18px 8px}
+.attrib{align-self:flex-end;font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--muted)}
+.keybox{display:flex;flex-direction:column;gap:9px;background:var(--bg);border-radius:12px;padding:12px;font-size:13px;line-height:1.45;color:var(--muted)}
+.keybox b{color:var(--fg)}
+.keybox a{color:var(--accent)}
+.keyrow{display:flex;gap:8px}
+.keyrow input{flex:1;min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 10px;color:var(--fg);font:500 14px var(--body)}
+.keyrow button{background:var(--accent);color:var(--accent-ink);font-weight:700;border-radius:10px;padding:0 14px}
+#gq{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:11px 12px;color:var(--fg);font:500 15px var(--body)}
+img.sticker.gif{border-radius:3cqi}
 .primary{background:var(--accent);color:var(--accent-ink);font-weight:700;border-radius:14px;padding:13px;font-size:15px}
 .primary:disabled{opacity:.4;cursor:not-allowed}
 
@@ -218,13 +237,26 @@ img.sticker{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;
   <div class="toast" id="toast" role="status"></div>
 
   <div class="backdrop" id="memeSheet" hidden>
-    <div class="sheet" role="dialog" aria-label="Rispondi con uno sticker">
-      <div class="sheet-head"><h3>Rispondi con uno sticker</h3><button class="ghost" data-close>Annulla</button></div>
+    <div class="sheet" role="dialog" aria-label="Rispondi">
+      <div class="sheet-head"><h3>Rispondi</h3><button class="ghost" data-close>Annulla</button></div>
       <p class="sheet-sub" id="replyTo"></p>
       <div class="preview" id="preview"></div>
       <div class="field"><label for="cap">Il tuo testo</label><input id="cap" maxlength="50" autocomplete="off" placeholder="Es. io dopo aver letto questo"></div>
-      <div class="pickrow"><span class="lab">I tuoi sticker</span><div class="chips" id="stickers"></div>
-        <p class="small">Tocca + per caricarli dalla galleria, oppure incolla qui uno sticker copiato da WhatsApp.</p></div>
+      <div class="srcseg" id="srcSeg" role="tablist" aria-label="Da dove prendere lo sticker">
+        <button role="tab" data-src="mine" class="on" aria-selected="true">I miei</button>
+        <button role="tab" data-src="stickers" aria-selected="false">Sticker GIPHY</button>
+        <button role="tab" data-src="gifs" aria-selected="false">GIF</button></div>
+      <div class="pickrow" id="paneMine"><div class="chips" id="stickers"></div>
+        <p class="small">Tocca + per caricarli dalla galleria, oppure incolla qui un'immagine copiata.</p></div>
+      <div class="pickrow" id="paneGiphy" hidden>
+        <div class="keybox" id="keyBox" hidden>
+          <span>Per cercare su GIPHY serve una <b>chiave gratuita</b>. Creala su <a href="https://developers.giphy.com/dashboard/" target="_blank" rel="noopener">developers.giphy.com</a> (Create an App → API) e incollala qui.</span>
+          <div class="keyrow"><input id="keyIn" autocomplete="off" placeholder="Incolla la chiave GIPHY" aria-label="Chiave GIPHY"><button id="keySave">Usa</button></div>
+        </div>
+        <div id="gBody"><input id="gq" type="search" autocomplete="off" aria-label="Cerca su GIPHY"></div>
+        <div class="ggrid" id="gGrid"></div>
+        <span class="attrib">POWERED BY GIPHY</span>
+      </div>
       <button class="primary" id="sendMeme" disabled>Pubblica</button>
     </div>
   </div>
@@ -309,12 +341,12 @@ const fmt=n=>n>=1000?(n/1000).toFixed(1).replace('.',',')+'k':String(n);
 const nameOf=u=>(USERS[u]&&USERS[u].name)||u;
 const initial=u=>esc(nameOf(u)[0].toUpperCase());
 
-function stickerEl(st){return st.type==='img'?`<img class="sticker" src="${st.v}" alt="">`:`<span class="sticker">${st.v}</span>`}
+function stickerEl(st){return st.type==='emoji'?`<span class="sticker">${st.v}</span>`:`<img class="sticker${st.type==='gif'?' gif':''}" src="${esc(st.v)}" alt="">`}
 function stickerCard(m,ph){
   return `<div class="meme" style="--r:${rot(m.id)}"><p class="caption${ph?' ph':''}">${esc(m.caption)}</p>
     <div class="stk">${stickerEl(m.sticker)}</div></div>`;
 }
-function tileInner(st){return st.type==='img'?`<img src="${st.v}" alt="">`:st.v}
+function tileInner(st){return st.type==='emoji'?st.v:`<img src="${esc(st.thumb||st.v)}" alt="">`}
 function starBtn(on,n,label,big){
   return `<button class="star${on?' on':''}${big?' big':''}" data-act="${big?'pstar':'star'}" aria-pressed="${on}" aria-label="${label}">${on?STAR_ON:STAR_OFF}<span>${fmt(n)}</span></button>`;
 }
@@ -490,12 +522,63 @@ function syncCreator(){
   $('#preview').innerHTML=stickerCard({id:previewId,sticker:draftSticker,caption:cap||'Il tuo testo appare qui, sopra lo sticker'},!cap);
   $('#sendMeme').disabled=!cap;
 }
-function openMeme(p){replyP=p;previewId=++uid;if(!myStickers.includes(draftSticker))draftSticker=myStickers[0];
-  $('#cap').value='';$('#replyTo').textContent='a: '+p.text;renderChips();syncCreator();$('#memeSheet').hidden=false;setTimeout(()=>$('#cap').focus(),50)}
+function openMeme(p){replyP=p;previewId=++uid;if(!myStickers.includes(draftSticker)&&!draftSticker.giphy)draftSticker=myStickers[0];
+  $('#cap').value='';$('#replyTo').textContent='a: '+p.text;renderChips();setSrc(draftSticker.giphy?src:'mine');syncCreator();$('#memeSheet').hidden=false;setTimeout(()=>$('#cap').focus(),50)}
 $('#stickers').addEventListener('click',e=>{const b=e.target.closest('[data-si]');if(b){draftSticker=myStickers[b.dataset.si];syncCreator()}});
 $('#stickers').addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.classList.contains('add'))$('#fileIn').click()});
 $('#cap').addEventListener('input',syncCreator);
 $('#cap').addEventListener('keydown',e=>{if(e.key==='Enter'&&!$('#sendMeme').disabled)$('#sendMeme').click()});
+/* ---------- GIPHY: stickers and GIFs ---------- */
+const GIPHY_KEY_DEFAULT='';           // put the app's GIPHY key here to make search work for everyone
+let giphyKey=GIPHY_KEY_DEFAULT;
+try{giphyKey=localStorage.getItem('stickback.giphyKey')||GIPHY_KEY_DEFAULT}catch(_){}
+let src='mine', gTimer=null, gReq=0, gResults=[];
+function setSrc(v){
+  src=v;
+  document.querySelectorAll('#srcSeg [data-src]').forEach(b=>{const on=b.dataset.src===v;b.classList.toggle('on',on);b.setAttribute('aria-selected',on)});
+  $('#paneMine').hidden=v!=='mine'; $('#paneGiphy').hidden=v==='mine';
+  if(v!=='mine'){$('#gq').placeholder=v==='gifs'?'Cerca una GIF':'Cerca uno sticker';$('#gq').value='';showGiphy()}
+}
+function showGiphy(){
+  const hasKey=!!giphyKey;
+  $('#keyBox').hidden=hasKey; $('#gBody').hidden=!hasKey;
+  if(!hasKey){$('#gGrid').innerHTML='';return}
+  searchGiphy();
+}
+function gMsg(t){$('#gGrid').innerHTML=`<p class="gmsg">${t}</p>`}
+async function searchGiphy(){
+  const q=$('#gq').value.trim(), kind=src, id=++gReq;
+  const url=`https://api.giphy.com/v1/${kind}/${q?'search':'trending'}?api_key=${encodeURIComponent(giphyKey)}&limit=30&rating=pg-13&lang=it${q?'&q='+encodeURIComponent(q):''}`;
+  gMsg('Carico…');
+  try{
+    const r=await fetch(url);
+    if(id!==gReq)return;
+    if(r.status===401||r.status===403){gMsg('La chiave GIPHY non funziona. <button class="pick" id="keyReset">Inserisci un\'altra chiave</button>');return}
+    if(r.status===429){gMsg('Troppe ricerche in poco tempo. Riprova tra un minuto.');return}
+    if(!r.ok)throw 0;
+    const d=(await r.json()).data||[];
+    gResults=d.map(g=>{const im=g.images||{};const big=im.fixed_width||im.downsized||im.original||{};const sm=im.fixed_width_small||big;
+      return {type:kind==='gifs'?'gif':'img',giphy:true,v:big.webp||big.url,thumb:sm.webp||sm.url,title:g.title||''}}).filter(g=>g.v);
+    if(!gResults.length){gMsg(q?`Nessun risultato per «${esc(q)}». Prova con un'altra parola.`:'Nessun risultato.');return}
+    $('#gGrid').innerHTML=gResults.map((g,i)=>`<button class="gitem${kind==='gifs'?' gif':''}${draftSticker.v===g.v?' on':''}" data-gi="${i}" aria-label="${esc(g.title||'Risultato '+(i+1))}"><img src="${esc(g.thumb)}" alt="" loading="lazy"></button>`).join('');
+  }catch(_){if(id===gReq)gMsg('GIPHY non risponde. Controlla la connessione e riprova.')}
+}
+$('#srcSeg').addEventListener('click',e=>{const b=e.target.closest('[data-src]');if(b)setSrc(b.dataset.src)});
+$('#gq').addEventListener('input',()=>{clearTimeout(gTimer);gTimer=setTimeout(searchGiphy,350)});
+$('#gGrid').addEventListener('click',e=>{
+  if(e.target.id==='keyReset'){giphyKey='';try{localStorage.removeItem('stickback.giphyKey')}catch(_){}showGiphy();return}
+  const b=e.target.closest('[data-gi]');if(!b)return;
+  draftSticker=gResults[b.dataset.gi];
+  document.querySelectorAll('#gGrid .gitem').forEach(x=>x.classList.toggle('on',x===b));
+  syncCreator();
+});
+$('#keySave').addEventListener('click',()=>{
+  const k=$('#keyIn').value.trim(); if(!k)return;
+  giphyKey=k; try{localStorage.setItem('stickback.giphyKey',k)}catch(_){}
+  $('#keyIn').value=''; showGiphy();
+});
+$('#keyIn').addEventListener('keydown',e=>{if(e.key==='Enter')$('#keySave').click()});
+
 $('#sendMeme').addEventListener('click',()=>{
   const m={id:previewId,author:ME,stars:1,starred:true,sticker:draftSticker,caption:$('#cap').value.trim()};
   replyP.memes.push(m); closeSheets(); renderScreen(replyP,{to:m.id}); toast('Sticker pubblicato');

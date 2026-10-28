@@ -11,6 +11,7 @@ Il nome unisce *sticker* e *clapback*, cioè la risposta pronta e ironica.
 - **Feed verticale**: scorri in giù per passare da un problema all'altro, come su TikTok o Reels.
 - **Risposte in orizzontale**: scorri di lato per vedere gli sticker di risposta, uno per schermata.
 - **Rispondi con i tuoi sticker**: scrivi il tuo testo e scegli uno sticker dalla tua raccolta. Il testo sta sopra, come un messaggio, e lo sticker sotto: restano separati, il testo non viene stampato sull'immagine.
+- **Sticker e GIF da GIPHY**: oltre ai tuoi sticker puoi cercare sticker e GIF su GIPHY direttamente dalla finestra di risposta.
 - **Stelle**: metti una stella sia al problema sia alle singole risposte. Doppio tap su uno sticker per mettere la stella al volo.
 - **Corona**: l'autore del problema sceglie la risposta migliore, che va in cima.
 - **Profilo**: nome, bio, statistiche (problemi, risposte, stelle, corone) e tre schede: i tuoi problemi, le tue risposte, i tuoi sticker.
@@ -28,6 +29,7 @@ Nel prototipo:
 - gli sticker di esempio sono emoji; con **+** puoi caricare immagini vere (meglio PNG o WEBP con sfondo trasparente, come gli sticker di WhatsApp);
 - puoi incollare uno sticker copiato (Ctrl/Cmd+V) mentre l'app è aperta;
 - quando posti un problema arrivano due risposte simulate, per vedere le notifiche.
+- la ricerca GIPHY usa la chiave in `GIPHY_KEY_DEFAULT` dentro `prototype/index.html`; se è vuota, l'app chiede di incollare una chiave, che resta salvata solo su quel telefono o browser.
 
 ## Note per l'app vera
 
