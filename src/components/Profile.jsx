@@ -77,10 +77,10 @@ export default function Profile({ user, users, problems, myStickers, showBack, o
       {tab === "sticker" && (
         <>
           <div className="sgrid">
-            {myStickers.map((st, i) => <div key={i} className="stile"><StickerThumb sticker={st} /></div>)}
+            {myStickers.map((st, i) => <div key={i} className="stile"><span className="tin"><StickerThumb sticker={st} /></span></div>)}
             <label className="addtile" htmlFor="fileIn" tabIndex={0}
               onKeyDown={(e) => { if (e.key === "Enter") document.getElementById("fileIn").click(); }}>
-              <b>+</b>Aggiungi
+              <span className="tin"><b>+</b>Aggiungi</span>
             </label>
           </div>
           <p className="note">Carica gli sticker dalla galleria del telefono, oppure incolla qui un'immagine copiata. Li ritrovi ogni volta che rispondi.</p>

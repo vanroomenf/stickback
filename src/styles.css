@@ -66,8 +66,9 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,label:focus-visi
 .pick{display:inline-flex;align-items:center;gap:4px;border:1px dashed var(--accent);color:var(--accent);border-radius:99px;padding:5px 10px;font-size:12px;font-weight:600;white-space:nowrap}
 
 /* sticker reply: your text on top, the sticker below, kept separate (nothing printed on the image) */
-.meme{width:100%;aspect-ratio:1;border-radius:16px;position:relative;overflow:hidden;container-type:inline-size;
-  display:flex;flex-direction:column;gap:3cqi;padding:6cqi 6cqi 5cqi;background:var(--surface);border:1px solid var(--line)}
+.meme{width:100%;height:0;padding-bottom:100%;border-radius:16px;position:relative;overflow:hidden;container-type:inline-size;
+  background:var(--surface);border:1px solid var(--line)}
+.meme-in{position:absolute;inset:0;display:flex;flex-direction:column;gap:3cqi;padding:6cqi 6cqi 5cqi}
 .caption{margin:0;font:600 6.6cqi/1.3 var(--body);color:var(--fg);text-wrap:pretty;overflow-wrap:anywhere}
 .caption.ph{color:var(--muted)}
 .stk{position:relative;flex:1;min-height:0;display:grid;place-items:center}
@@ -124,7 +125,7 @@ img.sticker{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;
 .pitem .thumbs{margin-left:auto;display:flex}
 .pitem .thumbs .meme{width:34px;border-radius:8px;margin-left:-8px;box-shadow:0 0 0 2px var(--surface)}
 .pitem .thumbs .caption{display:none}
-.pitem .thumbs .meme{padding:0;gap:0}
+.pitem .thumbs .meme-in{padding:0;gap:0}
 .pitem .thumbs .sticker{font-size:62cqi;filter:none}
 .rgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .ritem{text-align:left;display:flex;flex-direction:column;gap:6px;min-width:0}
@@ -132,10 +133,12 @@ img.sticker{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;
 .ritem .m{display:flex;gap:8px;font-size:12px;font-weight:700;align-items:center}
 .ritem .m .s{color:var(--accent)}
 .sgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
-.stile{aspect-ratio:1;border-radius:14px;background:var(--surface);display:grid;place-items:center;font-size:34px;container-type:inline-size;overflow:hidden}
+.stile{position:relative;height:0;padding-bottom:100%;border-radius:14px;background:var(--surface);display:grid;place-items:center;font-size:34px;container-type:inline-size;overflow:hidden}
+.tin{position:absolute;inset:0;display:grid;place-items:center}
 .stile img{width:78%;height:78%;object-fit:contain}
-.addtile{aspect-ratio:1;border-radius:14px;border:2px dashed var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+.addtile{position:relative;height:0;padding-bottom:100%;border-radius:14px;border:2px dashed var(--line);display:block;
   color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;text-align:center}
+.addtile .tin{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
 .addtile b{font-size:24px;line-height:1;color:var(--fg)}
 .addtile:hover{border-color:var(--accent)}
 .note{margin:0;font-size:13px;line-height:1.45;color:var(--muted);background:var(--surface);border-radius:12px;padding:12px 14px}
@@ -155,6 +158,7 @@ img.sticker{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;
 .sheet{width:100%;max-height:94%;overflow-y:auto;background:var(--surface);border-radius:22px 22px 0 0;border-top:1px solid var(--line);
   padding:18px 20px 22px;display:flex;flex-direction:column;gap:14px;animation:up .22s ease-out}
 @keyframes up{from{transform:translateY(30px);opacity:.4}}
+.sheet>*,.pickrow>*{flex-shrink:0}
 .sheet-head{display:flex;align-items:center;gap:10px}
 .sheet-head h3{margin:0;font-family:var(--display);font-weight:800;font-size:20px}
 .ghost{margin-left:auto;color:var(--muted);font-size:14px;padding:4px}
@@ -165,8 +169,8 @@ img.sticker{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;
 .field input,.field textarea{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:11px 12px;color:var(--fg);font:500 15px var(--body);resize:none}
 .chars{align-self:flex-end;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
 .pickrow{display:flex;flex-direction:column;gap:7px}
-.chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(46px,1fr));gap:7px}
-.chip{aspect-ratio:1;border-radius:12px;border:2px solid transparent;background:var(--bg);font-size:24px;display:grid;place-items:center;overflow:hidden}
+.chips{display:grid;grid-template-columns:repeat(auto-fill,52px);grid-auto-rows:52px;gap:8px}
+.chip{width:52px;height:52px;border-radius:12px;border:2px solid transparent;background:var(--bg);font-size:24px;display:grid;place-items:center;overflow:hidden}
 .chip img{width:82%;height:82%;object-fit:contain}
 .chip.on{border-color:var(--accent)}
 .chip.add{border:2px dashed var(--line);color:var(--muted);font-size:22px;cursor:pointer}
@@ -177,11 +181,11 @@ img.sticker{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;
 .srcseg button{flex:1;padding:8px 4px;border-radius:9px;font-weight:600;font-size:13px;color:var(--muted)}
 .srcseg button.on{background:var(--surface);color:var(--fg);box-shadow:0 0 0 1px var(--line)}
 .ggrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-height:min(420px,48vh);overflow-y:auto;overscroll-behavior:contain;padding:2px}
-.gitem{aspect-ratio:1;border-radius:14px;background:var(--bg);border:2px solid transparent;overflow:hidden;padding:12%}
-.gitem.gif{padding:0}
-.gitem img{width:100%;height:100%;object-fit:contain;display:block}
-.gitem.gif img{object-fit:cover}
-.gitem.on{border-color:var(--accent)}
+/* square tiles built with padding-bottom, not aspect-ratio: some phone browsers mis-size aspect-ratio boxes inside a grid and the rows overlap */
+.gitem{position:relative;display:block;width:100%;height:0;padding:0 0 100%;border-radius:14px;background:var(--bg);border:0;overflow:hidden}
+.gitem img{position:absolute;top:12%;left:12%;width:76%;height:76%;object-fit:contain;display:block}
+.gitem.gif img{top:0;left:0;width:100%;height:100%;object-fit:cover}
+.gitem.on::after{content:"";position:absolute;inset:0;border-radius:inherit;box-shadow:inset 0 0 0 3px var(--accent)}
 .gmsg{grid-column:1/-1;color:var(--muted);font-size:13px;line-height:1.45;text-align:center;padding:18px 8px}
 .attrib{align-self:flex-end;font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--muted)}
 .keybox{display:flex;flex-direction:column;gap:9px;background:var(--bg);border-radius:12px;padding:12px;font-size:13px;line-height:1.45;color:var(--muted)}

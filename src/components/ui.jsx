@@ -61,8 +61,10 @@ export function StickerThumb({ sticker }) {
 export function StickerCard({ meme, placeholder }) {
   return (
     <div className={`meme${meme.sticker.type === "gif" ? " gifcard" : ""}`} style={{ "--r": rot(meme.id) }}>
-      <p className={`caption${placeholder ? " ph" : ""}`}>{meme.caption}</p>
-      <div className="stk"><StickerImage sticker={meme.sticker} /></div>
+      <div className="meme-in">
+        <p className={`caption${placeholder ? " ph" : ""}`}>{meme.caption}</p>
+        <div className="stk"><StickerImage sticker={meme.sticker} /></div>
+      </div>
     </div>
   );
 }
