@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { searchGiphy } from "../lib/giphy.js";
+import { CATEGORIES } from "../lib/api.js";
 import { nextId } from "../lib/util.js";
 import { C, F } from "../theme.js";
 import { Primary, Sheet, StickerCard, StickerImage } from "./ui.js";
@@ -129,7 +130,8 @@ export function ReplySheet({ visible, problem, myStickers, lastAdded, onClose, o
 
 export function ProblemSheet({ visible, onClose, onPublish }) {
   const [text, setText] = useState("");
-  useEffect(() => { if (visible) setText(""); }, [visible]);
+  const [cat, setCat] = useState("altro");
+  useEffect(() => { if (visible) { setText(""); setCat("altro"); } }, [visible]);
   return (
     <Sheet visible={visible} title="Racconta il tuo problema" onClose={onClose}>
       <Text style={st.sub}>Una frase basta. Gli altri potranno risponderti solo con uno sticker o una GIF, più il loro testo.</Text>
@@ -140,7 +142,17 @@ export function ProblemSheet({ visible, onClose, onPublish }) {
           style={[st.input, { minHeight: 84, textAlignVertical: "top" }]} />
         <Text style={[st.small, { alignSelf: "flex-end" }]}>{text.length} / 140</Text>
       </View>
-      <Primary label="Pubblica" disabled={!text.trim()} onPress={() => onPublish(text.trim())} />
+      <View style={{ gap: 8 }}>
+        <Text style={st.lab}>CATEGORIA</Text>
+        <View style={st.cats}>
+          {CATEGORIES.map(([k, l]) => (
+            <Pressable key={k} onPress={() => setCat(k)} style={[st.cat, cat === k && st.catOn]} accessibilityRole="radio" accessibilityState={{ selected: cat === k }}>
+              <Text style={[st.catTxt, cat === k && { color: C.bg }]}>{l}</Text>
+            </Pressable>
+          ))}
+        </View>
+      </View>
+      <Primary label="Pubblica" disabled={!text.trim()} onPress={() => onPublish(text.trim(), cat)} />
     </Sheet>
   );
 }
@@ -181,5 +193,9 @@ const st = StyleSheet.create({
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   gitem: { borderRadius: 14, backgroundColor: C.bg, overflow: "hidden", borderWidth: 0, borderColor: "transparent" },
   gmsg: { color: C.muted, fontFamily: F.body, fontSize: 13, lineHeight: 19, textAlign: "center", paddingVertical: 18 },
+  cats: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  cat: { borderWidth: 1, borderColor: C.line, borderRadius: 99, paddingVertical: 7, paddingHorizontal: 13, backgroundColor: C.bg },
+  catOn: { backgroundColor: C.fg, borderColor: C.fg },
+  catTxt: { color: C.fg, fontFamily: F.semi, fontSize: 13 },
   attrib: { alignSelf: "flex-end", color: C.muted, fontFamily: F.bold, fontSize: 11, letterSpacing: 0.7 },
 });

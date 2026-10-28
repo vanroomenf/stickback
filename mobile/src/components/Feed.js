@@ -3,11 +3,13 @@ import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "rea
 import { orderReplies } from "../store.js";
 import { C, F } from "../theme.js";
 import { Avatar, SaveIcon, StarButton, StickerCard } from "./ui.js";
+import { CategoryBadge } from "./Social.js";
+import { categoryLabel } from "../lib/api.js";
 
 const GAP = 12;
 const SIDE = 20;
 
-function ProblemScreen({ me, p, first, height, width, users, dispatch, onReply, onUser, onMore, focusMid, savedSet, onToggleSave }) {
+function ProblemScreen({ me, p, first, height, width, users, dispatch, onReply, onUser, onMore, onShare, focusMid, savedSet, onToggleSave }) {
   const mine = p.author === me;
   const listRef = useRef(null);
   const [index, setIndex] = useState(0);
@@ -95,6 +97,7 @@ function ProblemScreen({ me, p, first, height, width, users, dispatch, onReply, 
             <Text style={st.handle}>@{p.author}</Text>
           </Pressable>
           <Text style={st.muted}>· {p.time}</Text>
+          {p.category && p.category !== "altro" && <CategoryBadge label={categoryLabel(p.category)} />}
           {mine && <View style={st.yours}><Text style={st.yoursTxt}>Il tuo problema</Text></View>}
           <Pressable style={st.more} hitSlop={10} onPress={() => onMore({ kind: "problem", id: p.id, author: p.author })}
             accessibilityLabel="Altre azioni sul problema">
@@ -137,6 +140,9 @@ function ProblemScreen({ me, p, first, height, width, users, dispatch, onReply, 
 
       <View style={st.actions}>
         <Text style={st.count}><Text style={{ color: C.fg, fontFamily: F.bold }}>{memes.length ? index + 1 : 0}</Text> / {memes.length} risposte</Text>
+        <Pressable style={st.share} onPress={() => onShare(p)} accessibilityLabel="Condividi come immagine" hitSlop={6}>
+          <Text style={st.shareTxt}>Condividi</Text>
+        </Pressable>
         <Pressable style={({ pressed }) => [st.reply, pressed && { opacity: 0.85 }]} onPress={() => onReply(p.id)}>
           <Text style={st.replyTxt}>Rispondi</Text>
         </Pressable>
@@ -170,7 +176,7 @@ const Feed = forwardRef(function Feed({ problems, topInset, refreshing, onRefres
           renderItem={({ item, index }) => (
             <View style={{ paddingTop: topInset }}>
               <ProblemScreen p={item} first={index === 0} height={box.h - topInset} width={box.w} {...rest}
-                focusMid={rest.focus?.pid === item.id && rest.focus.mid ? rest.focus : null} />
+                focusMid={rest.focus && rest.focus.pid === item.id && rest.focus.mid ? rest.focus : null} />
             </View>
           )}
           windowSize={3}
@@ -205,7 +211,9 @@ const st = StyleSheet.create({
   emptyTxt: { color: C.muted, fontFamily: F.body, fontSize: 14, lineHeight: 20, textAlign: "center" },
   actions: { paddingHorizontal: SIDE, flexDirection: "row", alignItems: "center", gap: 12 },
   count: { color: C.muted, fontFamily: F.body, fontSize: 13 },
-  reply: { marginLeft: "auto", backgroundColor: C.accent, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 18 },
+  share: { marginLeft: "auto", borderWidth: 1, borderColor: C.line, borderRadius: 14, paddingVertical: 11, paddingHorizontal: 14 },
+  shareTxt: { color: C.fg, fontFamily: F.semi, fontSize: 14 },
+  reply: { backgroundColor: C.accent, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 18 },
   replyTxt: { color: C.accentInk, fontFamily: F.bold, fontSize: 15 },
   hint: { color: C.muted, fontFamily: F.body, fontSize: 12, textAlign: "center", marginTop: -4, paddingHorizontal: SIDE },
 });

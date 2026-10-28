@@ -11,18 +11,31 @@ export const cleanSticker = ({ type, v, thumb, giphy }) => ({ type, v, ...(thumb
 const fail = (error) => { if (error) throw error; };
 
 // ───────── Feed ─────────
-export async function loadFeed(uid) {
-  const { data, error } = await supabase
+export const CATEGORIES = [
+  ["scuola", "Scuola"], ["lavoro", "Lavoro"], ["famiglia", "Famiglia"],
+  ["amore", "Amore"], ["amici", "Amici"], ["altro", "Altro"],
+];
+export const categoryLabel = (k) => CATEGORIES.find(([c]) => c === k)?.[1] ?? "Altro";
+
+// mode: "foryou" (mix of fresh, starred, needing replies, people you follow) | "friends" (people you follow)
+export async function loadFeed(uid, { mode = "foryou", category = null } = {}) {
+  const { data: ranked, error: rankError } = await supabase.rpc(mode === "friends" ? "feed_friends" : "feed_for_you", { cat: category, lim: 40, skip: 0 });
+  fail(rankError);
+  const ids = ranked.map((r) => r.id);
+  if (!ids.length) return { problems: [], users: {} };
+
+  const { data: rows, error } = await supabase
     .from("problems")
-    .select(`id, text, created_at,
+    .select(`id, text, created_at, category,
       author:profiles!problems_author_id_fkey(${PROFILE}),
       problem_stars(count),
       replies!replies_problem_id_fkey(id, caption, sticker, created_at,
         author:profiles!replies_author_id_fkey(${PROFILE}),
         reply_stars(count))`)
-    .order("created_at", { ascending: false })
-    .limit(60);
+    .in("id", ids);
   fail(error);
+  const pos = new Map(ids.map((id, i) => [id, i]));
+  const data = [...rows].sort((a, b) => pos.get(a.id) - pos.get(b.id));
 
   const pids = data.map((p) => p.id);
   const rids = data.flatMap((p) => p.replies.map((r) => r.id));
@@ -42,6 +55,7 @@ export async function loadFeed(uid) {
     author: keep(p.author),
     time: ago(p.created_at),
     text: p.text,
+    category: p.category,
     stars: p.problem_stars?.[0]?.count ?? 0,
     starred: starredP.has(p.id),
     memes: [...p.replies]
@@ -87,8 +101,8 @@ export async function setReplyStar(rid, on) {
   if (error && error.code !== "23505") throw error;
 }
 
-export async function createProblem(text) {
-  const { data, error } = await supabase.from("problems").insert({ text }).select("id, created_at").single();
+export async function createProblem(text, category = "altro") {
+  const { data, error } = await supabase.from("problems").insert({ text, category }).select("id, created_at").single();
   fail(error);
   return data;
 }
@@ -229,4 +243,24 @@ export function explainError(e, fallback) {
   if (m.includes("contenuto_non_ammesso")) return "Il testo contiene parole non ammesse. Riformulalo.";
   if (m.includes("row-level security")) return "Non puoi farlo: forse l'utente è bloccato o il contenuto è stato nascosto.";
   return fallback;
+}
+
+// ───────── Following and leaderboard ─────────
+export async function setFollow(uid, on) {
+  const q = supabase.from("follows");
+  const { error } = on ? await q.insert({ followee_id: uid }) : await q.delete().eq("followee_id", uid).eq("follower_id", (await me()).id);
+  if (error && error.code !== "23505") throw error;
+}
+
+export async function profileCounts(uid) {
+  const { data, error } = await supabase.rpc("profile_counts", { uid });
+  fail(error);
+  const row = Array.isArray(data) ? data[0] : data;
+  return { followers: Number(row?.followers ?? 0), following: Number(row?.following ?? 0), iFollow: !!row?.i_follow };
+}
+
+export async function loadLeaderboard() {
+  const { data, error } = await supabase.rpc("leaderboard_week", { lim: 20 });
+  fail(error);
+  return data.map((r) => ({ id: r.user_id, username: r.username, name: r.name, stars: Number(r.stars), replies: Number(r.replies) }));
 }

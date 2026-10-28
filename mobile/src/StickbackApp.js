@@ -12,8 +12,8 @@ import Profile from "./components/Profile.js";
 import { EditProfileSheet, ProblemSheet, ReplySheet } from "./components/Sheets.js";
 import { Avatar, HomeIcon, Toast } from "./components/ui.js";
 import { ConfirmSheet, MoreSheet, ReportSheet, SettingsSheet, TermsGate } from "./components/Safety.js";
+import { FeedHeader, LeaderboardSheet, ShareSheet, TOPBAR_HEIGHT } from "./components/Social.js";
 
-const TOPBAR = 52;
 
 export default function StickbackApp({ userId }) {
   const insets = useSafeAreaInsets();
@@ -35,6 +35,10 @@ export default function StickbackApp({ userId }) {
   const [reportTarget, setReportTarget] = useState(null);
   const [blockTarget, setBlockTarget] = useState(null);
   const [settings, setSettings] = useState(false);
+  const [feedMode, setFeedMode] = useState("foryou"); // "foryou" | "friends"
+  const [category, setCategory] = useState(null);
+  const [leaderboard, setLeaderboard] = useState(false);
+  const [shareProblem, setShareProblem] = useState(null);
   const feedRef = useRef(null);
   const problemsRef = useRef(problems);
   problemsRef.current = problems;
@@ -48,14 +52,16 @@ export default function StickbackApp({ userId }) {
   // ───────── Loading ─────────
   const refresh = useCallback(async () => {
     try {
-      const { problems: ps, users: us } = await api.loadFeed(userId);
+      const { problems: ps, users: us } = await api.loadFeed(userId, { mode: feedMode, category });
       dispatch({ type: "setFeed", problems: ps, users: us });
       setLoadError(false);
     } catch {
       setLoadError(true);
       say("Non riesco a caricare i problemi. Controlla la connessione.");
     }
-  }, [userId, say]);
+  }, [userId, say, feedMode, category]);
+
+  useEffect(() => { refresh(); }, [refresh]);
 
   useEffect(() => {
     (async () => {
@@ -68,10 +74,9 @@ export default function StickbackApp({ userId }) {
       } catch {
         setLoadError(true);
       }
-      refresh();
       api.loadSavedStickers().then((stickers) => dispatch({ type: "setSaved", stickers })).catch(() => {});
     })();
-  }, [userId, refresh]);
+  }, [userId]);
 
   // New replies appear live, with a notice when they are for one of your problems
   useEffect(() => {
@@ -186,11 +191,11 @@ export default function StickbackApp({ userId }) {
     }
   };
 
-  const publishProblem = async (text) => {
+  const publishProblem = async (text, cat) => {
     setSheet(null);
     try {
-      const row = await api.createProblem(text);
-      dispatch({ type: "addProblem", problem: { id: row.id, author: me, time: "adesso", stars: 0, starred: false, text, memes: [] } });
+      const row = await api.createProblem(text, cat);
+      dispatch({ type: "addProblem", problem: { id: row.id, author: me, time: "adesso", stars: 0, starred: false, text, category: cat, memes: [] } });
       setView("feed");
       setTimeout(() => feedRef.current?.scrollToProblem(row.id), 50);
       say("Problema pubblicato");
@@ -269,7 +274,7 @@ export default function StickbackApp({ userId }) {
   };
 
   const replyTo = sheet?.kind === "reply" ? problems.find((p) => p.id === sheet.pid) : null;
-  const topInset = insets.top + TOPBAR;
+  const topInset = insets.top + TOPBAR_HEIGHT;
 
   if (gate) {
     return (
@@ -299,27 +304,46 @@ export default function StickbackApp({ userId }) {
       <View style={{ flex: 1 }}>
         <View style={[StyleSheet.absoluteFill, view !== "feed" && st.hidden]} pointerEvents={view === "feed" ? "auto" : "none"}>
           {problems.length ? (
-            <Feed ref={feedRef} me={me} problems={problems} users={users} dispatch={act} focus={focus} topInset={topInset}
+            <Feed key={`${feedMode}-${category}`} ref={feedRef} me={me} onShare={setShareProblem} problems={problems} users={users} dispatch={act} focus={focus} topInset={topInset}
               refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await refresh(); setRefreshing(false); }}
               onReply={(pid) => { setLastAdded(null); setSheet({ kind: "reply", pid }); }}
               onUser={(u) => openProfile(u, true)} onMore={setMore} savedSet={savedSet} onToggleSave={toggleSave} />
           ) : (
             <View style={[st.center, { flex: 1, paddingTop: topInset, paddingHorizontal: 32, gap: 14 }]}>
-              <Text style={st.emptyTitle}>Ancora nessun problema</Text>
-              <Text style={st.centerTxt}>Sei tra i primi. Racconta una figuraccia: gli altri ti risponderanno con uno sticker.</Text>
-              <Pressable style={st.retry} onPress={() => setSheet({ kind: "problem" })}><Text style={st.retryTxt}>Racconta il primo problema</Text></Pressable>
+              {feedMode === "friends" ? (
+                <>
+                  <Text style={st.emptyTitle}>{category ? "Niente in questa categoria" : "Qui vedi chi segui"}</Text>
+                  <Text style={st.centerTxt}>{category ? "Le persone che segui non hanno ancora problemi in questa categoria." : "Apri il profilo di qualcuno che ti fa ridere e tocca Segui: i suoi problemi arriveranno qui."}</Text>
+                  <Pressable style={st.retry} onPress={() => { setFeedMode("foryou"); setCategory(null); }}><Text style={st.retryTxt}>Vai a Per te</Text></Pressable>
+                </>
+              ) : category ? (
+                <>
+                  <Text style={st.emptyTitle}>Niente in questa categoria</Text>
+                  <Text style={st.centerTxt}>Nessun problema recente qui. Racconta il primo!</Text>
+                  <Pressable style={st.retry} onPress={() => setSheet({ kind: "problem" })}><Text style={st.retryTxt}>Racconta un problema</Text></Pressable>
+                </>
+              ) : (
+                <>
+                  <Text style={st.emptyTitle}>Ancora nessun problema</Text>
+                  <Text style={st.centerTxt}>Sei tra i primi. Racconta una figuraccia: gli altri ti risponderanno con uno sticker.</Text>
+                  <Pressable style={st.retry} onPress={() => setSheet({ kind: "problem" })}><Text style={st.retryTxt}>Racconta il primo problema</Text></Pressable>
+                </>
+              )}
             </View>
           )}
-          <View style={[st.topbar, { paddingTop: insets.top + 10 }]} pointerEvents="box-none">
-            <Text style={st.logo}>Stick<Text style={{ color: C.accent }}>back</Text></Text>
-          </View>
+          <FeedHeader topInset={insets.top} mode={feedMode} onMode={setFeedMode} category={category} onCategory={setCategory}
+            onLeaderboard={() => setLeaderboard(true)} />
         </View>
         {view === "profile" && profileUser && (
           <View style={StyleSheet.absoluteFill}>
             <Profile key={profileUser} me={me} user={profileUser} users={users} problems={problems} myStickers={myStickers}
               topInset={insets.top} showBack={profileBack} onBack={() => setView("feed")} onGo={goToProblem}
               onEdit={() => setSheet({ kind: "edit" })} onAddStickers={fromGallery} onPaste={fromClipboard}
-              onRemoveSticker={removeSticker} onSettings={() => setSettings(true)} onMore={setMore} />
+              onRemoveSticker={removeSticker} onSettings={() => setSettings(true)} onMore={setMore}
+              loadCounts={api.profileCounts} onFollow={async (uid, on) => {
+                try { await api.setFollow(uid, on); say(on ? `Ora segui @${profileUser}` : `Non segui più @${profileUser}`); return true; }
+                catch { oops(); return false; }
+              }} />
           </View>
         )}
       </View>
@@ -344,6 +368,8 @@ export default function StickbackApp({ userId }) {
       <ReplySheet visible={!!replyTo} problem={replyTo} myStickers={myStickers} lastAdded={lastAdded} onClose={close}
         onPublish={(r) => publishReply(replyTo.id, r)} onAddStickers={fromGallery} onPaste={fromClipboard} />
       <ProblemSheet visible={sheet?.kind === "problem"} onClose={close} onPublish={publishProblem} />
+      <LeaderboardSheet visible={leaderboard} load={api.loadLeaderboard} onClose={() => setLeaderboard(false)} onUser={(u) => openProfile(u, true)} />
+      <ShareSheet problem={shareProblem} onClose={() => setShareProblem(null)} say={say} />
       <MoreSheet target={more} me={me} onClose={() => setMore(null)}
         onReport={() => { setReportTarget(more); setMore(null); }}
         onBlock={() => { setBlockTarget(more.author); setMore(null); }}

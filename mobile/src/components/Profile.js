@@ -1,15 +1,26 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { orderReplies } from "../store.js";
 import { fmt, hue, initialOf } from "../lib/util.js";
 import { C, F } from "../theme.js";
 import { StarIcon, StickerCard, StickerImage } from "./ui.js";
 
-export default function Profile({ me: myName, user, users, problems, myStickers, showBack, onBack, onGo, onEdit, onAddStickers, onPaste, onRemoveSticker, onSettings, onMore, topInset }) {
+export default function Profile({ me: myName, user, users, problems, myStickers, showBack, onBack, onGo, onEdit, onAddStickers, onPaste, onRemoveSticker, onSettings, onMore, loadCounts, onFollow, topInset }) {
   const [tab, setTab] = useState("problemi");
   const { width } = useWindowDimensions();
   const me = user === myName;
   const info = users[user] || { name: user, bio: "Qui solo per gli sticker." };
+  const uid = users[user]?.id;
+  const [counts, setCounts] = useState(null);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => { if (uid) loadCounts(uid).then(setCounts).catch(() => {}); }, [uid, loadCounts]);
+  const toggleFollow = async () => {
+    if (!counts || busy) return;
+    setBusy(true);
+    const on = !counts.iFollow;
+    if (await onFollow(uid, on)) setCounts((c) => ({ ...c, iFollow: on, followers: c.followers + (on ? 1 : -1) }));
+    setBusy(false);
+  };
 
   const probs = problems.filter((p) => p.author === user);
   const replies = problems.flatMap((p) => p.memes.filter((m) => m.author === user).map((m) => ({ p, m })));
@@ -42,6 +53,16 @@ export default function Profile({ me: myName, user, users, problems, myStickers,
         </View>
       </View>
       {!!info.bio && <Text style={st.bio}>{info.bio}</Text>}
+      {counts && (
+        <Text style={st.follow}>
+          <Text style={st.followNum}>{fmt(counts.followers)}</Text> {counts.followers === 1 ? "follower" : "follower"} · <Text style={st.followNum}>{fmt(counts.following)}</Text> seguiti
+        </Text>
+      )}
+      {!me && counts && (
+        <Pressable style={[st.followBtn, counts.iFollow && st.followingBtn]} onPress={toggleFollow} disabled={busy}>
+          <Text style={[st.followBtnTxt, counts.iFollow && { color: C.fg }]}>{counts.iFollow ? "Segui già" : "Segui"}</Text>
+        </Pressable>
+      )}
       {me && (
         <View style={{ flexDirection: "row", gap: 10 }}>
           <Pressable style={st.editbtn} onPress={onEdit}><Text style={st.editTxt}>Modifica profilo</Text></Pressable>
@@ -136,6 +157,11 @@ const st = StyleSheet.create({
   pname: { color: C.fg, fontFamily: F.display, fontSize: 23 },
   phandle: { color: C.muted, fontFamily: F.body, fontSize: 14, marginTop: 3 },
   bio: { color: C.fg, fontFamily: F.body, fontSize: 15, lineHeight: 21 },
+  follow: { color: C.muted, fontFamily: F.body, fontSize: 14 },
+  followNum: { color: C.fg, fontFamily: F.bold },
+  followBtn: { alignSelf: "flex-start", backgroundColor: C.accent, borderRadius: 99, paddingVertical: 9, paddingHorizontal: 22 },
+  followingBtn: { backgroundColor: "transparent", borderWidth: 1, borderColor: C.line },
+  followBtnTxt: { color: C.accentInk, fontFamily: F.bold, fontSize: 14 },
   editbtn: { alignSelf: "flex-start", borderWidth: 1, borderColor: C.line, borderRadius: 99, paddingVertical: 7, paddingHorizontal: 14 },
   editTxt: { color: C.fg, fontFamily: F.semi, fontSize: 13 },
   stats: { flexDirection: "row", backgroundColor: C.surface, borderWidth: 1, borderColor: C.line, borderRadius: 16, paddingVertical: 12 },
