@@ -1,4 +1,4 @@
--- Stickback: following people, categories, the "Per te" / "Amici" feeds and the weekly leaderboard
+-- Stickback: following people, categories, and the "Per te" / "Amici" feeds
 -- Run in Supabase → SQL Editor after 0001–0003.
 
 -- ───────────────────────── Categories ─────────────────────────
@@ -88,26 +88,6 @@ as $$
   limit lim offset skip;
 $$;
 
--- ───────────────────────── Weekly leaderboard ─────────────────────────
--- Who collected the most stars on their replies in the last 7 days
-create function public.leaderboard_week(lim int default 20)
-returns table (user_id uuid, username text, name text, stars bigint, replies bigint)
-language sql
-stable
-set search_path = ''
-as $$
-  select pr.id, pr.username, pr.name, count(*) as stars, count(distinct r.id) as replies
-  from public.reply_stars s
-  join public.replies r on r.id = s.reply_id
-  join public.profiles pr on pr.id = r.author_id
-  where s.created_at > now() - interval '7 days'
-    and s.user_id <> r.author_id               -- your own stars don't count
-    and not pr.banned
-  group by pr.id, pr.username, pr.name
-  order by stars desc, replies desc
-  limit lim;
-$$;
-
 -- ───────────────────────── Profile counters ─────────────────────────
 create function public.profile_counts(uid uuid)
 returns table (followers bigint, following bigint, i_follow boolean)
@@ -122,6 +102,6 @@ as $$
 $$;
 
 revoke execute on function public.feed_for_you(text, int, int), public.feed_friends(text, int, int),
-  public.leaderboard_week(int), public.profile_counts(uuid), public.blocks_unfollow() from public, anon;
+  public.profile_counts(uuid), public.blocks_unfollow() from public, anon;
 grant execute on function public.feed_for_you(text, int, int), public.feed_friends(text, int, int),
-  public.leaderboard_week(int), public.profile_counts(uuid) to authenticated;
+  public.profile_counts(uuid) to authenticated;

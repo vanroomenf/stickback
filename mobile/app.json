@@ -26,8 +26,7 @@
         {
           "photosPermission": "Stickback usa la galleria per aggiungere i tuoi sticker."
         }
-      ],
-      "expo-sharing"
+      ]
     ],
     "scheme": "stickback",
     "backgroundColor": "#1a1622",

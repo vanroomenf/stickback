@@ -245,7 +245,7 @@ export function explainError(e, fallback) {
   return fallback;
 }
 
-// ───────── Following and leaderboard ─────────
+// ───────── Following ─────────
 export async function setFollow(uid, on) {
   const q = supabase.from("follows");
   const { error } = on ? await q.insert({ followee_id: uid }) : await q.delete().eq("followee_id", uid).eq("follower_id", (await me()).id);
@@ -259,8 +259,3 @@ export async function profileCounts(uid) {
   return { followers: Number(row?.followers ?? 0), following: Number(row?.following ?? 0), iFollow: !!row?.i_follow };
 }
 
-export async function loadLeaderboard() {
-  const { data, error } = await supabase.rpc("leaderboard_week", { lim: 20 });
-  fail(error);
-  return data.map((r) => ({ id: r.user_id, username: r.username, name: r.name, stars: Number(r.stars), replies: Number(r.replies) }));
-}

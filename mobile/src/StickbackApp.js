@@ -12,7 +12,7 @@ import Profile from "./components/Profile.js";
 import { EditProfileSheet, ProblemSheet, ReplySheet } from "./components/Sheets.js";
 import { Avatar, HomeIcon, Toast } from "./components/ui.js";
 import { ConfirmSheet, MoreSheet, ReportSheet, SettingsSheet, TermsGate } from "./components/Safety.js";
-import { FeedHeader, LeaderboardSheet, ShareSheet, TOPBAR_HEIGHT } from "./components/Social.js";
+import { FeedHeader, TOPBAR_HEIGHT } from "./components/Social.js";
 
 
 export default function StickbackApp({ userId }) {
@@ -37,8 +37,6 @@ export default function StickbackApp({ userId }) {
   const [settings, setSettings] = useState(false);
   const [feedMode, setFeedMode] = useState("foryou"); // "foryou" | "friends"
   const [category, setCategory] = useState(null);
-  const [leaderboard, setLeaderboard] = useState(false);
-  const [shareProblem, setShareProblem] = useState(null);
   const feedRef = useRef(null);
   const problemsRef = useRef(problems);
   problemsRef.current = problems;
@@ -304,7 +302,7 @@ export default function StickbackApp({ userId }) {
       <View style={{ flex: 1 }}>
         <View style={[StyleSheet.absoluteFill, view !== "feed" && st.hidden]} pointerEvents={view === "feed" ? "auto" : "none"}>
           {problems.length ? (
-            <Feed key={`${feedMode}-${category}`} ref={feedRef} me={me} onShare={setShareProblem} problems={problems} users={users} dispatch={act} focus={focus} topInset={topInset}
+            <Feed key={`${feedMode}-${category}`} ref={feedRef} me={me} problems={problems} users={users} dispatch={act} focus={focus} topInset={topInset}
               refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await refresh(); setRefreshing(false); }}
               onReply={(pid) => { setLastAdded(null); setSheet({ kind: "reply", pid }); }}
               onUser={(u) => openProfile(u, true)} onMore={setMore} savedSet={savedSet} onToggleSave={toggleSave} />
@@ -331,8 +329,7 @@ export default function StickbackApp({ userId }) {
               )}
             </View>
           )}
-          <FeedHeader topInset={insets.top} mode={feedMode} onMode={setFeedMode} category={category} onCategory={setCategory}
-            onLeaderboard={() => setLeaderboard(true)} />
+          <FeedHeader topInset={insets.top} mode={feedMode} onMode={setFeedMode} category={category} onCategory={setCategory} />
         </View>
         {view === "profile" && profileUser && (
           <View style={StyleSheet.absoluteFill}>
@@ -368,8 +365,6 @@ export default function StickbackApp({ userId }) {
       <ReplySheet visible={!!replyTo} problem={replyTo} myStickers={myStickers} lastAdded={lastAdded} onClose={close}
         onPublish={(r) => publishReply(replyTo.id, r)} onAddStickers={fromGallery} onPaste={fromClipboard} />
       <ProblemSheet visible={sheet?.kind === "problem"} onClose={close} onPublish={publishProblem} />
-      <LeaderboardSheet visible={leaderboard} load={api.loadLeaderboard} onClose={() => setLeaderboard(false)} onUser={(u) => openProfile(u, true)} />
-      <ShareSheet problem={shareProblem} onClose={() => setShareProblem(null)} say={say} />
       <MoreSheet target={more} me={me} onClose={() => setMore(null)}
         onReport={() => { setReportTarget(more); setMore(null); }}
         onBlock={() => { setBlockTarget(more.author); setMore(null); }}

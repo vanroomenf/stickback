@@ -132,7 +132,7 @@ Configurazione:
 3. Edge Functions → Secrets: aggiungi `OPENAI_API_KEY`.
 4. SQL Editor: esegui `supabase/migrations/0003_image_filter.sql`.
 
-## Feed, seguire, categorie, classifica e condivisione
+## Feed, seguire e categorie
 
 Migrazione `supabase/migrations/0004_social.sql`.
 
@@ -140,8 +140,6 @@ Migrazione `supabase/migrations/0004_social.sql`.
 - **Amici**: i problemi più recenti delle persone che segui (`feed_friends`).
 - **Categorie**: Scuola, Lavoro, Famiglia, Amore, Amici, Altro. Si sceglie quando si pubblica e si filtra dal feed.
 - **Segui** dal profilo, con follower e seguiti. Bloccare qualcuno toglie anche il "segui" tra voi.
-- **Classifica della settimana** (icona del trofeo): chi ha ricevuto più stelle sulle risposte negli ultimi 7 giorni.
-- **Condividi**: crea un'immagine verticale con il problema e la risposta con più stelle, da condividere nelle storie.
 
 ## Prossimi passi per l'app negli store
 
