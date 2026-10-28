@@ -11,6 +11,8 @@ export const cleanSticker = ({ type, v, thumb, giphy }) => ({ type, v, ...(thumb
 
 const fail = (error) => { if (error) throw error; };
 
+export const OPEN_FOR = 7 * 24 * 3600 * 1000; // a problem takes replies for one week
+
 // ───────── Feed ─────────
 // Keys are stored in the database; the labels follow the app's language
 export const CATEGORY_KEYS = ["scuola", "lavoro", "famiglia", "amore", "amici", "altro"];
@@ -19,13 +21,21 @@ export const categoryLabel = (k) => t(`cat.${CATEGORY_KEYS.includes(k) ? k : "al
 
 // One feed for everyone: a mix of fresh problems, the most starred, and the ones that still need replies
 // langs: the languages of the problems to show, e.g. ["it", "en"]
-export async function loadFeed(uid, { category = null, langs = null } = {}) {
-  let { data: ranked, error: rankError } = await supabase.rpc("feed_for_you", { cat: category, langs, lim: 40, skip: 0 });
+export const PAGE = 20;
+// skip: how many problems you already have, to load the next page. more = there may be others after these.
+export async function loadFeed(uid, { category = null, langs = null, skip = 0 } = {}) {
+  let { data: ranked, error: rankError } = await supabase.rpc("feed_for_you", { cat: category, langs, lim: PAGE, skip });
   // database without migration 0005 yet: the old feed, all languages
-  if (rankError?.code === "PGRST202") ({ data: ranked, error: rankError } = await supabase.rpc("feed_for_you", { cat: category, lim: 40, skip: 0 }));
+  if (rankError?.code === "PGRST202") ({ data: ranked, error: rankError } = await supabase.rpc("feed_for_you", { cat: category, lim: PAGE, skip }));
   fail(rankError);
   const ids = ranked.map((r) => r.id);
-  return loadProblems(uid, ids);
+  return { ...(await loadProblems(uid, ids)), more: ids.length === PAGE };
+}
+
+// One problem, e.g. when you open a notification
+export async function loadOneProblem(uid, id) {
+  const { problems, users } = await loadProblems(uid, [id]);
+  return { problem: problems[0] ?? null, users };
 }
 
 // Full problems (author, replies, stars, what you starred) for a list of ids, kept in that order
@@ -65,6 +75,8 @@ async function loadProblems(uid, ids) {
     text: p.text,
     category: p.category,
     lang: p.lang ?? "it",
+    // replies are accepted for one week
+    closesAt: new Date(p.created_at).getTime() + OPEN_FOR,
     stars: p.problem_stars?.[0]?.count ?? 0,
     starred: starredP.has(p.id),
     memes: [...p.replies]
@@ -232,6 +244,15 @@ export async function deleteProblem(id) {
 export async function deleteReply(id) {
   const { error } = await supabase.from("replies").delete().eq("id", id);
   fail(error);
+}
+
+// ───────── Push notifications ─────────
+export async function savePushToken(token, lang) {
+  const { error } = await supabase.rpc("register_push_token", { tok: token, lng: lang });
+  if (error && error.code !== "PGRST202") throw error; // PGRST202: migration 0006 not run yet
+}
+export async function removePushToken(token) {
+  await supabase.from("push_tokens").delete().eq("token", token);
 }
 
 export async function acceptTerms() {

@@ -30,7 +30,8 @@
           "photosPermission": "Stickback uses your photos to add your stickers."
         }
       ],
-      "expo-localization"
+      "expo-localization",
+      "expo-notifications"
     ],
     "scheme": "stickback",
     "backgroundColor": "#1a1622",

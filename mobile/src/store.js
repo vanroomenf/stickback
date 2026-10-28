@@ -20,6 +20,11 @@ export function reducer(state, a) {
   switch (a.type) {
     case "setFeed":
       return { ...state, problems: a.problems, users: { ...state.users, ...a.users }, loaded: true };
+    case "appendFeed": {
+      // next page of the feed; skip problems already on screen (the ranking moves a little between pages)
+      const seen = new Set(state.problems.map((p) => p.id));
+      return { ...state, problems: [...state.problems, ...a.problems.filter((p) => !seen.has(p.id))], users: { ...state.users, ...a.users } };
+    }
     case "setUsers":
       return { ...state, users: { ...state.users, ...a.users } };
     case "starProblem":

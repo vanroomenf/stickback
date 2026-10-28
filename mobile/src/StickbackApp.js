@@ -15,6 +15,7 @@ import { ConfirmSheet, MoreSheet, ReportSheet, SettingsSheet, TermsGate } from "
 import { FeedHeader, TOPBAR_HEIGHT } from "./components/Social.js";
 import { feedLanguages, lang, setFeedLanguages, t, tn } from "./i18n/index.js";
 import { detectLanguage } from "./i18n/detect.js";
+import { getPushToken, onNotificationOpen, pushPermission } from "./lib/push.js";
 
 
 export default function StickbackApp({ userId }) {
@@ -41,6 +42,9 @@ export default function StickbackApp({ userId }) {
   const [category, setCategory] = useState(null);
   const [feedLangs, setFeedLangs] = useState(feedLanguages); // languages of the problems in your feed
   const [postsVersion, setPostsVersion] = useState(0); // bumps when you delete or post, so the profile reloads
+  const [pushAsk, setPushAsk] = useState(false); // "want to know when people reply?" after your first post
+  const pushToken = useRef(null);
+  const paging = useRef({ more: false, busy: false });
   const feedRef = useRef(null);
   const problemsRef = useRef(problems);
   problemsRef.current = problems;
@@ -54,8 +58,9 @@ export default function StickbackApp({ userId }) {
   // ───────── Loading ─────────
   const refresh = useCallback(async () => {
     try {
-      const { problems: ps, users: us } = await api.loadFeed(userId, { category, langs: feedLangs });
+      const { problems: ps, users: us, more } = await api.loadFeed(userId, { category, langs: feedLangs });
       dispatch({ type: "setFeed", problems: ps, users: us });
+      paging.current = { more, busy: false };
       setLoadError(false);
     } catch {
       setLoadError(true);
@@ -64,6 +69,32 @@ export default function StickbackApp({ userId }) {
   }, [userId, say, category, feedLangs]);
 
   useEffect(() => { refresh(); }, [refresh]);
+
+  // Next page when you get near the end of the feed
+  const loadMore = useCallback(async () => {
+    const pg = paging.current;
+    if (!pg.more || pg.busy) return;
+    pg.busy = true;
+    try {
+      const { problems: ps, users: us, more } = await api.loadFeed(userId, { category, langs: feedLangs, skip: problemsRef.current.length });
+      dispatch({ type: "appendFeed", problems: ps, users: us });
+      paging.current = { more, busy: false };
+    } catch {
+      pg.busy = false; // try again on the next scroll
+    }
+  }, [userId, category, feedLangs]);
+
+  // ───────── Push notifications ─────────
+  const savePush = useCallback(async (ask) => {
+    try {
+      const token = await getPushToken({ ask });
+      if (!token) return;
+      pushToken.current = token;
+      await api.savePushToken(token, lang());
+    } catch { /* no notifications on this phone; the app works the same */ }
+  }, []);
+  // already allowed: refresh this phone's token (and language) quietly
+  useEffect(() => { if (me && !gate) savePush(false); }, [me, gate, savePush]);
 
   useEffect(() => {
     (async () => {
@@ -191,6 +222,22 @@ export default function StickbackApp({ userId }) {
     dispatch({ type: "setUsers", users: us });
     return ps;
   }, [userId, profileId]);
+  // Tapping a notification opens that problem and reply
+  const openFromNotification = useCallback(async ({ pid, mid }) => {
+    if (!problemsRef.current.some((p) => p.id === pid)) {
+      try {
+        const { problem, users: us } = await api.loadOneProblem(userId, pid);
+        if (!problem) return;
+        dispatch({ type: "setUsers", users: us });
+        dispatch({ type: "addProblem", problem });
+      } catch { return; }
+    }
+    setView("feed");
+    setTimeout(() => feedRef.current?.scrollToProblem(pid), 60);
+    setFocus({ pid, mid, n: nextId() });
+  }, [userId]);
+  useEffect(() => onNotificationOpen(openFromNotification), [openFromNotification]);
+
   const goToProblem = (pid, mid, problem) => {
     // older problems from a profile aren't in the feed: put them on top so you can open them
     if (problem && !problemsRef.current.some((p) => p.id === pid)) dispatch({ type: "addProblem", problem });
@@ -224,7 +271,9 @@ export default function StickbackApp({ userId }) {
     const postLang = detectLanguage(text, lang());
     try {
       const row = await api.createProblem(text, cat, postLang);
-      dispatch({ type: "addProblem", problem: { id: row.id, author: me, time: t("time.now"), stars: 0, starred: false, text, category: cat, lang: postLang, memes: [] } });
+      dispatch({ type: "addProblem", problem: { id: row.id, author: me, time: t("time.now"), stars: 0, starred: false, text, category: cat, lang: postLang, closesAt: Date.now() + api.OPEN_FOR, memes: [] } });
+      // the right moment to offer notifications: you're waiting for replies
+      pushPermission().then((p) => { if (p === "ask") setTimeout(() => setPushAsk(true), 1200); }).catch(() => {});
       setPostsVersion((n) => n + 1);
       setView("feed");
       setTimeout(() => feedRef.current?.scrollToProblem(row.id), 50);
@@ -246,7 +295,11 @@ export default function StickbackApp({ userId }) {
     }
   };
 
-  const signOut = () => supabase.auth.signOut();
+  // this phone stops getting notifications for the account you leave
+  const signOut = async () => {
+    if (pushToken.current) await api.removePushToken(pushToken.current).catch(() => {});
+    await supabase.auth.signOut();
+  };
 
   // ───────── Safety: report, block, delete ─────────
   const removeLocally = (fn) => dispatch({ type: "setFeed", problems: fn(problemsRef.current), users: {} });
@@ -336,7 +389,7 @@ export default function StickbackApp({ userId }) {
         <View style={[StyleSheet.absoluteFill, view !== "feed" && st.hidden]} pointerEvents={view === "feed" ? "auto" : "none"}>
           {problems.length ? (
             <Feed key={`feed-${category}-${feedLangs.join()}`} ref={feedRef} me={me} problems={problems} users={users} dispatch={act} focus={focus} topInset={topInset}
-              refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await refresh(); setRefreshing(false); }}
+              refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await refresh(); setRefreshing(false); }} onEndReached={loadMore}
               onReply={(pid) => { setLastAdded(null); setSheet({ kind: "reply", pid }); }}
               onUser={(u) => openProfile(u, true)} onMore={setMore} savedSet={savedSet} onToggleSave={toggleSave} />
           ) : (
@@ -393,6 +446,8 @@ export default function StickbackApp({ userId }) {
         onReport={() => { setReportTarget(more); setMore(null); }}
         onBlock={() => { setBlockTarget(more.author); setMore(null); }}
         onDelete={() => askDelete(more)} />
+      <ConfirmSheet visible={pushAsk} title={t("push.title")} text={t("push.ask")} confirm={t("push.enable")}
+        onClose={() => setPushAsk(false)} onConfirm={async () => { setPushAsk(false); await savePush(true); }} />
       <ConfirmSheet visible={!!ask} title={ask?.title ?? ""} text={ask?.text ?? ""} confirm={ask?.confirm ?? ""} danger
         onClose={() => setAsk(null)} onConfirm={async () => { const run = ask.run; setAsk(null); await run(); }} />
       <ReportSheet target={reportTarget} onClose={() => setReportTarget(null)} onSend={sendReport} />

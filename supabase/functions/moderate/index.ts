@@ -6,6 +6,9 @@
 // image. If the content is flagged, it is hidden (or removed from the sticker collection) and a
 // report from "filtro automatico" lands in the moderators' queue.
 //
+// When a reply passes the check, the author of the problem gets a push notification on their
+// phones (tokens in public.push_tokens, sent through Expo's push service), in their language.
+//
 // Secrets (Edge Functions → Secrets): OPENAI_API_KEY.
 // SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are provided by Supabase automatically.
 
@@ -47,9 +50,59 @@ async function check(text: string | null, sticker: Sticker | null) {
   return flagged ? { categories: flagged.categories as Record<string, boolean> } : { categories: null };
 }
 
+// ───────── Push notifications ─────────
+const NOTIFY: Record<string, (user: string, caption: string) => { title: string; body: string }> = {
+  it: (u, c) => ({ title: `@${u} ti ha risposto`, body: c ? `«${c}»` : "Guarda lo sticker che ti ha mandato" }),
+  en: (u, c) => ({ title: `@${u} replied to you`, body: c ? `“${c}”` : "See the sticker they sent you" }),
+  de: (u, c) => ({ title: `@${u} hat dir geantwortet`, body: c ? `«${c}»` : "Schau dir den Sticker an" }),
+  fr: (u, c) => ({ title: `@${u} t'a répondu`, body: c ? `« ${c} »` : "Regarde le sticker qu'on t'a envoyé" }),
+};
+
+// Tell the author of the problem about a new reply. showCaption is false when the text couldn't be checked.
+async function notifyReply(replyId: number, showCaption: boolean) {
+  const { data } = await sb.from("replies")
+    .select("id, caption, author_id, hidden, notified_at, author:profiles!replies_author_id_fkey(username), problem:problems!replies_problem_id_fkey(id, author_id, hidden)")
+    .eq("id", replyId).maybeSingle();
+  // deno-lint-ignore no-explicit-any
+  const r = data as any;
+  if (!r || r.hidden || r.notified_at || !r.problem || r.problem.hidden) return;
+  const to = r.problem.author_id as string;
+  if (to === r.author_id) return; // replying to yourself
+
+  const { count } = await sb.from("blocks").select("*", { count: "exact", head: true })
+    .or(`and(blocker_id.eq.${to},blocked_id.eq.${r.author_id}),and(blocker_id.eq.${r.author_id},blocked_id.eq.${to})`);
+  if (count) return;
+
+  // claim the reply first, so two calls never send twice
+  const { data: claimed } = await sb.from("replies").update({ notified_at: new Date().toISOString() })
+    .eq("id", replyId).is("notified_at", null).select("id");
+  if (!claimed?.length) return;
+
+  const { data: phones } = await sb.from("push_tokens").select("token, lang").eq("user_id", to);
+  if (!phones?.length) return;
+
+  const messages = phones.map((p: { token: string; lang: string }) => ({
+    to: p.token,
+    sound: "default",
+    ...(NOTIFY[p.lang] ?? NOTIFY.en)(r.author?.username ?? "?", showCaption ? r.caption : ""),
+    data: { pid: r.problem.id, mid: r.id },
+  }));
+  const res = await fetch("https://exp.host/--/api/v2/push/send", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify(messages),
+  });
+  if (!res.ok) { console.error("push", res.status, await res.text()); return; }
+  // forget phones that uninstalled the app or turned notifications off for good
+  const { data: tickets } = await res.json();
+  const gone = (tickets ?? [])
+    .map((t: { status: string; details?: { error?: string } }, i: number) => t.status === "error" && t.details?.error === "DeviceNotRegistered" ? messages[i].to : null)
+    .filter(Boolean);
+  if (gone.length) await sb.from("push_tokens").delete().in("token", gone);
+}
+
 Deno.serve(async (req) => {
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
-  if (!OPENAI_KEY) return new Response("OPENAI_API_KEY missing", { status: 500 });
 
   let table = "", id = 0;
   try {
@@ -75,10 +128,13 @@ Deno.serve(async (req) => {
 
   let verdict;
   try {
+    if (!OPENAI_KEY) throw new Error("OPENAI_API_KEY missing");
     verdict = await check(text, sticker);
   } catch (e) {
     console.error(e);
-    return new Response("moderation failed", { status: 502 }); // stays unchecked; reports still work
+    // stays unchecked (reports still work); the notification goes out without the text
+    if (table === "replies") await notifyReply(id, false).catch(console.error);
+    return new Response("moderation failed", { status: 502 });
   }
 
   if (verdict?.categories) {
@@ -97,5 +153,6 @@ Deno.serve(async (req) => {
   if (table !== "saved_stickers" || !verdict?.categories) {
     await sb.from(table).update({ moderated_at: new Date().toISOString() }).eq("id", id);
   }
+  if (table === "replies" && !verdict?.categories) await notifyReply(id, true).catch(console.error);
   return new Response(verdict?.categories ? "hidden" : "ok");
 });

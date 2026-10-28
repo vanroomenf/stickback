@@ -149,6 +149,16 @@ L'app in `mobile/` è in **italiano, inglese, tedesco e francese**. Segue la lin
 - **Post nella tua lingua** (migrazione `supabase/migrations/0005_languages.sql`): ogni problema ha una lingua, riconosciuta in automatico dal testo sul telefono (`mobile/src/i18n/detect.js`); se il testo è troppo corto o ambiguo si usa la lingua dell'app. Il feed mostra solo i problemi nella lingua dell'app; da Impostazioni → Lingue dei post se ne possono aggiungere altre. I problemi pubblicati prima della migrazione sono segnati come italiani. Finché la migrazione non è eseguita, l'app mostra tutte le lingue.
 - Il testo che chiede il permesso per le foto è tradotto in `mobile/locales/`; vale nell'app installata dagli store, non in Expo Go.
 
+## Tempo limite, notifiche, password e benvenuto
+
+Migrazione `supabase/migrations/0006_week_and_push.sql`.
+
+- **Una settimana per rispondere**: dopo 7 giorni un problema si chiude (il database rifiuta nuove risposte) ed esce dal feed; resta visibile nei profili. Sotto ogni problema c'è il tempo che resta.
+- **Feed infinito**: il feed carica 20 problemi alla volta e prende i successivi quando arrivi in fondo.
+- **Notifiche push** quando qualcuno risponde a un tuo problema, nella lingua di chi le riceve. Le manda la Edge Function `moderate` dopo che la risposta ha passato il filtro (tramite il servizio push di Expo). L'app chiede il permesso dopo il primo problema pubblicato. Serve l'ID del progetto Expo in `app.json` (`extra.eas.projectId`). In Expo Go funzionano solo su iPhone; su Android serve la versione installabile.
+- **Password dimenticata**: dall'accesso, l'app manda un codice per email e si sceglie la nuova password. Su Supabase il modello email "Reset Password" deve contenere `{{ .Token }}`.
+- **Benvenuto**: tre schermate alla prima apertura (racconta, rispondi con uno sticker, dai le stelle).
+
 ## Prossimi passi per l'app negli store
 
 - **Condividi → Stickback anche su iPhone**: con una Share Extension nell'app nativa.

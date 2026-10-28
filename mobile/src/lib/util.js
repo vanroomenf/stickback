@@ -25,6 +25,17 @@ export function ago(iso) {
   return new Date(iso).toLocaleDateString(localeTag(), { day: "numeric", month: "short" });
 }
 
+// How long a problem still takes replies: "3 days left", "5 hours left", or closed
+export function timeLeft(closesAt) {
+  const ms = closesAt - Date.now();
+  if (!closesAt || Number.isNaN(ms)) return null;
+  if (ms <= 0) return { closed: true, text: t("feed.closed") };
+  const h = Math.floor(ms / 3600000);
+  if (h >= 24) { const d = Math.floor(h / 24); return { closed: false, text: t(`feed.leftDays.${d === 1 ? "one" : "other"}`, { n: d }) }; }
+  if (h >= 1) return { closed: false, text: t(`feed.leftHours.${h === 1 ? "one" : "other"}`, { n: h }) };
+  return { closed: false, text: t("feed.leftSoon") };
+}
+
 // "GG/MM/AAAA" → age in whole years, or null if the date isn't valid
 export function ageFrom(text) {
   const m = /^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/.exec(text.trim());

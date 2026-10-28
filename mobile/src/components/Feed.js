@@ -6,12 +6,14 @@ import { Avatar, SaveIcon, StarButton, StickerCard } from "./ui.js";
 import { CategoryBadge } from "./Social.js";
 import { categoryLabel } from "../lib/api.js";
 import { t } from "../i18n/index.js";
+import { timeLeft } from "../lib/util.js";
 
 const GAP = 12;
 const SIDE = 20;
 
 function ProblemScreen({ me, p, first, height, width, users, dispatch, onReply, onUser, onMore, focusMid, savedSet, onToggleSave }) {
   const mine = p.author === me;
+  const left = timeLeft(p.closesAt);
   const listRef = useRef(null);
   const [index, setIndex] = useState(0);
   const [carH, setCarH] = useState(0);
@@ -140,17 +142,19 @@ function ProblemScreen({ me, p, first, height, width, users, dispatch, onReply, 
       </View>
 
       <View style={st.actions}>
-        <View style={{ flex: 1 }} />
-        <Pressable style={({ pressed }) => [st.reply, pressed && { opacity: 0.85 }]} onPress={() => onReply(p.id)}>
-          <Text style={st.replyTxt}>{t("feed.reply")}</Text>
-        </Pressable>
+        <Text style={[st.count, { flex: 1 }]} numberOfLines={1}>{left?.text ?? ""}</Text>
+        {!left?.closed && (
+          <Pressable style={({ pressed }) => [st.reply, pressed && { opacity: 0.85 }]} onPress={() => onReply(p.id)}>
+            <Text style={st.replyTxt}>{t("feed.reply")}</Text>
+          </Pressable>
+        )}
       </View>
       {first && <Text style={st.hint}>{t("feed.swipeHint")}</Text>}
     </View>
   );
 }
 
-const Feed = forwardRef(function Feed({ problems, topInset, refreshing, onRefresh, ...rest }, ref) {
+const Feed = forwardRef(function Feed({ problems, topInset, refreshing, onRefresh, onEndReached, ...rest }, ref) {
   const listRef = useRef(null);
   const [box, setBox] = useState({ w: 0, h: 0 });
 
@@ -178,6 +182,8 @@ const Feed = forwardRef(function Feed({ problems, topInset, refreshing, onRefres
             </View>
           )}
           windowSize={3}
+          onEndReached={onEndReached}
+          onEndReachedThreshold={2}
           refreshControl={<RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} tintColor={C.accent} progressViewOffset={topInset} />}
         />
       )}
