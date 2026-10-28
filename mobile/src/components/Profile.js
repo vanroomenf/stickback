@@ -1,18 +1,27 @@
-import { useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { orderReplies } from "../store.js";
 import { fmt, hue, initialOf } from "../lib/util.js";
 import { C, F } from "../theme.js";
 import { StarIcon, StickerCard, StickerImage } from "./ui.js";
 
-export default function Profile({ me: myName, user, users, problems, myStickers, showBack, onBack, onGo, onEdit, onAddStickers, onPaste, onRemoveSticker, onSettings, onMore, topInset }) {
+export default function Profile({ me: myName, user, users, problems, myStickers, showBack, onBack, onGo, onEdit, onAddStickers, onPaste, onRemoveSticker, onSettings, onMore, topInset, loadPosts, postsVersion }) {
   const [tab, setTab] = useState("problemi");
   const { width } = useWindowDimensions();
   const me = user === myName;
   const info = users[user] || { name: user, bio: "Qui solo per gli sticker." };
 
-  const probs = problems.filter((p) => p.author === user);
-  const replies = problems.flatMap((p) => p.memes.filter((m) => m.author === user).map((m) => ({ p, m })));
+  // Everything this person posted, also what's too old for the feed; the feed's copy is shown while it loads
+  const [posts, setPosts] = useState(null);
+  useEffect(() => {
+    let live = true;
+    loadPosts?.().then((ps) => { if (live) setPosts(ps); }).catch(() => {});
+    return () => { live = false; };
+  }, [loadPosts, postsVersion]);
+  const all = posts ?? problems;
+
+  const probs = all.filter((p) => p.author === user);
+  const replies = all.flatMap((p) => p.memes.filter((m) => m.author === user).map((m) => ({ p, m })));
   const stars = probs.reduce((a, p) => a + p.stars, 0) + replies.reduce((a, r) => a + r.m.stars, 0);
   const tabs = [["problemi", "Problemi"], ["risposte", "Risposte"], ...(me ? [["sticker", "Sticker"]] : [])];
 
@@ -67,8 +76,11 @@ export default function Profile({ me: myName, user, users, problems, myStickers,
       </View>
 
       {tab === "problemi" && (probs.length ? probs.map((p) => (
-        <Pressable key={p.id} style={st.pitem} onPress={() => onGo(p.id)}>
-          <Text style={st.pitemT}>{p.text}</Text>
+        <Pressable key={p.id} style={st.pitem} onPress={() => onGo(p.id, null, p)}>
+          <View style={{ flexDirection: "row", gap: 8 }}>
+            <Text style={[st.pitemT, { flex: 1 }]}>{p.text}</Text>
+            {me && <MoreBtn label="Elimina il problema" onPress={() => onMore({ kind: "problem", id: p.id, author: p.author })} />}
+          </View>
           <View style={st.pitemM}>
             <StarIcon filled size={14} color={C.accent} />
             <Text style={st.small}>{fmt(p.stars)}</Text>
@@ -81,16 +93,17 @@ export default function Profile({ me: myName, user, users, problems, myStickers,
             </View>
           </View>
         </Pressable>
-      )) : <Text style={st.pempty}>{me ? "Non hai ancora raccontato nessun problema.\nTocca + in basso per iniziare." : "Nessun problema ancora."}</Text>)}
+      )) : posts === null && !probs.length ? <ActivityIndicator color={C.accent} style={{ paddingVertical: 28 }} /> : <Text style={st.pempty}>{me ? "Non hai ancora raccontato nessun problema.\nTocca + in basso per iniziare." : "Nessun problema ancora."}</Text>)}
 
       {tab === "risposte" && (replies.length ? (
         <View style={st.rgrid}>
           {replies.map(({ p, m }) => (
-            <Pressable key={m.id} style={{ width: half, gap: 6 }} onPress={() => onGo(p.id, m.id)}>
+            <Pressable key={m.id} style={{ width: half, gap: 6 }} onPress={() => onGo(p.id, m.id, p)}>
               <StickerCard meme={m} size={half} />
               <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
                 <StarIcon filled size={13} color={C.accent} />
                 <Text style={st.gold}>{fmt(m.stars)}</Text>
+                {me && <View style={{ marginLeft: "auto" }}><MoreBtn label="Elimina la risposta" onPress={() => onMore({ kind: "reply", id: m.id, pid: p.id, author: m.author })} /></View>}
               </View>
               <Text style={st.small} numberOfLines={2}>su: {p.text}</Text>
             </Pressable>
@@ -122,6 +135,14 @@ export default function Profile({ me: myName, user, users, problems, myStickers,
         </>
       )}
     </ScrollView>
+  );
+}
+
+function MoreBtn({ label, onPress }) {
+  return (
+    <Pressable onPress={onPress} hitSlop={10} accessibilityLabel={label} style={{ paddingHorizontal: 4 }}>
+      <Text style={{ color: C.muted, fontSize: 20, lineHeight: 20, fontFamily: F.bold }}>⋯</Text>
+    </Pressable>
   );
 }
 

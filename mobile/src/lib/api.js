@@ -22,8 +22,12 @@ export async function loadFeed(uid, { category = null } = {}) {
   const { data: ranked, error: rankError } = await supabase.rpc("feed_for_you", { cat: category, lim: 40, skip: 0 });
   fail(rankError);
   const ids = ranked.map((r) => r.id);
-  if (!ids.length) return { problems: [], users: {} };
+  return loadProblems(uid, ids);
+}
 
+// Full problems (author, replies, stars, what you starred) for a list of ids, kept in that order
+async function loadProblems(uid, ids) {
+  if (!ids.length) return { problems: [], users: {} };
   const { data: rows, error } = await supabase
     .from("problems")
     .select(`id, text, created_at, category,
@@ -63,6 +67,18 @@ export async function loadFeed(uid, { category = null } = {}) {
       .map((r) => toReply(r, keep, starredR.has(r.id))),
   }));
   return { problems, users };
+}
+
+// Everything someone has posted, of any age: their problems and the problems they replied to
+export async function loadUserPosts(uid, authorId) {
+  if (!authorId) return { problems: [], users: {} };
+  const [ps, rs] = await Promise.all([
+    supabase.from("problems").select("id").eq("author_id", authorId).order("created_at", { ascending: false }).limit(100),
+    supabase.from("replies").select("problem_id").eq("author_id", authorId).order("created_at", { ascending: false }).limit(100),
+  ]);
+  fail(ps.error); fail(rs.error);
+  const ids = [...new Set([...ps.data.map((r) => r.id), ...rs.data.map((r) => r.problem_id)])];
+  return loadProblems(uid, ids);
 }
 
 function toReply(r, keep, starred) {

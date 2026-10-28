@@ -36,6 +36,7 @@ export default function StickbackApp({ userId }) {
   const [blockTarget, setBlockTarget] = useState(null);
   const [settings, setSettings] = useState(false);
   const [category, setCategory] = useState(null);
+  const [postsVersion, setPostsVersion] = useState(0); // bumps when you delete or post, so the profile reloads
   const feedRef = useRef(null);
   const problemsRef = useRef(problems);
   problemsRef.current = problems;
@@ -164,7 +165,15 @@ export default function StickbackApp({ userId }) {
     setProfileBack(fromFeed && u !== me);
     setView("profile");
   };
-  const goToProblem = (pid, mid) => {
+  const profileId = users[profileUser]?.id;
+  const loadPosts = useCallback(async () => {
+    const { problems: ps, users: us } = await api.loadUserPosts(userId, profileId);
+    dispatch({ type: "setUsers", users: us });
+    return ps;
+  }, [userId, profileId]);
+  const goToProblem = (pid, mid, problem) => {
+    // older problems from a profile aren't in the feed: put them on top so you can open them
+    if (problem && !problemsRef.current.some((p) => p.id === pid)) dispatch({ type: "addProblem", problem });
     setView("feed");
     setTimeout(() => feedRef.current?.scrollToProblem(pid), 30);
     setFocus({ pid, mid, n: nextId() });
@@ -182,6 +191,7 @@ export default function StickbackApp({ userId }) {
         api.saveSticker(stored).catch(() => {});
       }
       setFocus({ pid, mid: id, n: nextId() });
+      setPostsVersion((n) => n + 1);
       say(stored.type === "gif" ? "GIF pubblicata" : "Sticker pubblicato");
     } catch (e) {
       say(api.explainError(e, "Non sono riuscito a pubblicare. Controlla la connessione e riprova."));
@@ -193,6 +203,7 @@ export default function StickbackApp({ userId }) {
     try {
       const row = await api.createProblem(text, cat);
       dispatch({ type: "addProblem", problem: { id: row.id, author: me, time: "adesso", stars: 0, starred: false, text, category: cat, memes: [] } });
+      setPostsVersion((n) => n + 1);
       setView("feed");
       setTimeout(() => feedRef.current?.scrollToProblem(row.id), 50);
       say("Problema pubblicato");
@@ -258,6 +269,7 @@ export default function StickbackApp({ userId }) {
         await api.deleteReply(t.id);
         removeLocally((ps) => ps.map((p) => ({ ...p, memes: p.memes.filter((m) => m.id !== t.id) })));
       }
+      setPostsVersion((n) => n + 1);
       say("Eliminato");
     } catch { oops(); }
   };
@@ -329,7 +341,8 @@ export default function StickbackApp({ userId }) {
             <Profile key={profileUser} me={me} user={profileUser} users={users} problems={problems} myStickers={myStickers}
               topInset={insets.top} showBack={profileBack} onBack={() => setView("feed")} onGo={goToProblem}
               onEdit={() => setSheet({ kind: "edit" })} onAddStickers={fromGallery} onPaste={fromClipboard}
-              onRemoveSticker={removeSticker} onSettings={() => setSettings(true)} onMore={setMore} />
+              onRemoveSticker={removeSticker} onSettings={() => setSettings(true)} onMore={setMore}
+              loadPosts={loadPosts} postsVersion={postsVersion} />
           </View>
         )}
       </View>
