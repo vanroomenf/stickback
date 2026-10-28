@@ -14,6 +14,7 @@ import { Avatar, HomeIcon, Toast } from "./components/ui.js";
 import { ConfirmSheet, MoreSheet, ReportSheet, SettingsSheet, TermsGate } from "./components/Safety.js";
 import { FeedHeader, TOPBAR_HEIGHT } from "./components/Social.js";
 import { feedLanguages, lang, setFeedLanguages, t, tn } from "./i18n/index.js";
+import { detectLanguage } from "./i18n/detect.js";
 
 
 export default function StickbackApp({ userId }) {
@@ -217,8 +218,10 @@ export default function StickbackApp({ userId }) {
     }
   };
 
-  const publishProblem = async (text, cat, postLang) => {
+  const publishProblem = async (text, cat) => {
     setSheet(null);
+    // the language is recognised from the text; when unsure, the app's language
+    const postLang = detectLanguage(text, lang());
     try {
       const row = await api.createProblem(text, cat, postLang);
       dispatch({ type: "addProblem", problem: { id: row.id, author: me, time: t("time.now"), stars: 0, starred: false, text, category: cat, lang: postLang, memes: [] } });
@@ -332,7 +335,7 @@ export default function StickbackApp({ userId }) {
       <View style={{ flex: 1 }}>
         <View style={[StyleSheet.absoluteFill, view !== "feed" && st.hidden]} pointerEvents={view === "feed" ? "auto" : "none"}>
           {problems.length ? (
-            <Feed key={`feed-${category}-${feedLangs.join()}`} showLang={feedLangs.length > 1 ? lang() : null} ref={feedRef} me={me} problems={problems} users={users} dispatch={act} focus={focus} topInset={topInset}
+            <Feed key={`feed-${category}-${feedLangs.join()}`} ref={feedRef} me={me} problems={problems} users={users} dispatch={act} focus={focus} topInset={topInset}
               refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await refresh(); setRefreshing(false); }}
               onReply={(pid) => { setLastAdded(null); setSheet({ kind: "reply", pid }); }}
               onUser={(u) => openProfile(u, true)} onMore={setMore} savedSet={savedSet} onToggleSave={toggleSave} />

@@ -214,7 +214,6 @@ export default {
   "problem.sub": "Ein Satz reicht. Die anderen können nur mit einem Sticker oder einem GIF antworten, plus ihrem eigenen Text.",
   "problem.what": "WAS IST PASSIERT?",
   "problem.ph": "z. B. Ich habe die Lehrerin vor der ganzen Klasse «Mama» genannt",
-  "problem.lang": "SPRACHE DES BEITRAGS",
   "problem.category": "KATEGORIE",
   "edit.title": "Profil bearbeiten",
   "edit.name": "NAME",

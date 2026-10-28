@@ -214,7 +214,6 @@ export default {
   "problem.sub": "One sentence is enough. People can only reply with a sticker or a GIF, plus their own text.",
   "problem.what": "WHAT HAPPENED?",
   "problem.ph": "e.g. I called my teacher “mum” in front of the whole class",
-  "problem.lang": "POST LANGUAGE",
   "problem.category": "CATEGORY",
   "edit.title": "Edit profile",
   "edit.name": "NAME",

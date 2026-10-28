@@ -10,7 +10,7 @@ import { t } from "../i18n/index.js";
 const GAP = 12;
 const SIDE = 20;
 
-function ProblemScreen({ showLang, me, p, first, height, width, users, dispatch, onReply, onUser, onMore, focusMid, savedSet, onToggleSave }) {
+function ProblemScreen({ me, p, first, height, width, users, dispatch, onReply, onUser, onMore, focusMid, savedSet, onToggleSave }) {
   const mine = p.author === me;
   const listRef = useRef(null);
   const [index, setIndex] = useState(0);
@@ -99,7 +99,6 @@ function ProblemScreen({ showLang, me, p, first, height, width, users, dispatch,
           </Pressable>
           <Text style={st.muted}>· {p.time}</Text>
           {p.category && p.category !== "altro" && <CategoryBadge label={categoryLabel(p.category)} />}
-          {showLang && p.lang && p.lang !== showLang && <CategoryBadge label={p.lang.toUpperCase()} />}
           {mine && <View style={st.yours}><Text style={st.yoursTxt}>{t("feed.yours")}</Text></View>}
           <Pressable style={st.more} hitSlop={10} onPress={() => onMore({ kind: "problem", id: p.id, author: p.author })}
             accessibilityLabel={t("feed.problemMore")}>

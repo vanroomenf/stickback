@@ -214,7 +214,6 @@ export default {
   "problem.sub": "Une phrase suffit. Les autres pourront te répondre seulement avec un sticker ou un GIF, plus leur texte.",
   "problem.what": "QU'EST-CE QUI T'EST ARRIVÉ ?",
   "problem.ph": "ex. J'ai appelé la prof « maman » devant toute la classe",
-  "problem.lang": "LANGUE DU POST",
   "problem.category": "CATÉGORIE",
   "edit.title": "Modifier le profil",
   "edit.name": "NOM",

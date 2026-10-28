@@ -227,7 +227,6 @@ export default {
   "problem.sub": "Una frase basta. Gli altri potranno risponderti solo con uno sticker o una GIF, più il loro testo.",
   "problem.what": "COSA TI È SUCCESSO?",
   "problem.ph": "Es. Ho chiamato la prof «mamma» davanti a tutta la classe",
-  "problem.lang": "LINGUA DEL POST",
   "problem.category": "CATEGORIA",
   "edit.title": "Modifica profilo",
   "edit.name": "NOME",
