@@ -122,6 +122,16 @@ Seconda migrazione: `supabase/migrations/0002_moderation.sql` (da eseguire nell'
 3. Per sospendere un utente: `profiles` → `banned = true`.
 4. Chiudere la segnalazione: `reports` → `status = 'risolta'` o `'respinta'`.
 
+## Filtro automatico (immagini e testo)
+
+Ogni nuovo problema, risposta e sticker salvato viene controllato dal modello di moderazione gratuito di OpenAI, tramite la Edge Function `supabase/functions/moderate`. Se viene segnalato, il contenuto viene nascosto (o tolto dalla raccolta) e compare in `moderation.queue` come "filtro automatico". Gli sticker di GIPHY non vengono controllati, perché sono già filtrati da GIPHY.
+
+Configurazione:
+1. Crea una chiave su platform.openai.com → API keys.
+2. Supabase → Edge Functions → Deploy a new function → Via Editor: nome `moderate`, incolla `supabase/functions/moderate/index.ts`, Deploy. Nei dettagli della funzione disattiva "Verify JWT".
+3. Edge Functions → Secrets: aggiungi `OPENAI_API_KEY`.
+4. SQL Editor: esegui `supabase/migrations/0003_image_filter.sql`.
+
 ## Prossimi passi per l'app negli store
 
 - **Condividi → Stickback anche su iPhone**: con una Share Extension nell'app nativa.
