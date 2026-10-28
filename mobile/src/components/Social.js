@@ -1,22 +1,15 @@
-// Feed header: Per te / Amici and the category filter
+// Feed header: logo and the category filter
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { CATEGORIES } from "../lib/api.js";
 import { C, F } from "../theme.js";
 
-export const TOPBAR_HEIGHT = 92;
+export const TOPBAR_HEIGHT = 84;
 
-export function FeedHeader({ topInset, mode, onMode, category, onCategory }) {
+export function FeedHeader({ topInset, category, onCategory }) {
   return (
     <View style={[st.bar, { paddingTop: topInset + 8 }]}>
       <View style={st.row}>
         <Text style={st.logo}>Stick<Text style={{ color: C.accent }}>back</Text></Text>
-        <View style={st.tabs}>
-          {[["foryou", "Per te"], ["friends", "Amici"]].map(([k, l]) => (
-            <Pressable key={k} onPress={() => onMode(k)} hitSlop={6} accessibilityRole="tab" accessibilityState={{ selected: mode === k }}>
-              <Text style={[st.tab, mode === k && st.tabOn]}>{l}</Text>
-            </Pressable>
-          ))}
-        </View>
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={st.chips}>
         {[[null, "Tutte"], ...CATEGORIES].map(([k, l]) => (
@@ -37,10 +30,7 @@ export function CategoryBadge({ label }) {
 const st = StyleSheet.create({
   bar: { position: "absolute", top: 0, left: 0, right: 0, backgroundColor: C.bg, paddingBottom: 8, gap: 8 },
   row: { flexDirection: "row", alignItems: "center", gap: 14, paddingHorizontal: 16 },
-  logo: { color: C.fg, fontFamily: F.display, fontSize: 19, letterSpacing: -0.4 },
-  tabs: { flexDirection: "row", gap: 14, marginLeft: 6 },
-  tab: { color: C.muted, fontFamily: F.semi, fontSize: 15, paddingBottom: 3, borderBottomWidth: 2, borderColor: "transparent" },
-  tabOn: { color: C.fg, borderColor: C.accent },
+  logo: { color: C.fg, fontFamily: F.display, fontSize: 21, letterSpacing: -0.4 },
   chips: { gap: 7, paddingHorizontal: 16 },
   chip: { borderWidth: 1, borderColor: C.line, borderRadius: 99, paddingVertical: 5, paddingHorizontal: 12 },
   chipOn: { backgroundColor: C.fg, borderColor: C.fg },

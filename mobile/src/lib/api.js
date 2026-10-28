@@ -17,9 +17,9 @@ export const CATEGORIES = [
 ];
 export const categoryLabel = (k) => CATEGORIES.find(([c]) => c === k)?.[1] ?? "Altro";
 
-// mode: "foryou" (mix of fresh, starred, needing replies, people you follow) | "friends" (people you follow)
-export async function loadFeed(uid, { mode = "foryou", category = null } = {}) {
-  const { data: ranked, error: rankError } = await supabase.rpc(mode === "friends" ? "feed_friends" : "feed_for_you", { cat: category, lim: 40, skip: 0 });
+// One feed for everyone: a mix of fresh problems, the most starred, and the ones that still need replies
+export async function loadFeed(uid, { category = null } = {}) {
+  const { data: ranked, error: rankError } = await supabase.rpc("feed_for_you", { cat: category, lim: 40, skip: 0 });
   fail(rankError);
   const ids = ranked.map((r) => r.id);
   if (!ids.length) return { problems: [], users: {} };
@@ -243,19 +243,5 @@ export function explainError(e, fallback) {
   if (m.includes("contenuto_non_ammesso")) return "Il testo contiene parole non ammesse. Riformulalo.";
   if (m.includes("row-level security")) return "Non puoi farlo: forse l'utente è bloccato o il contenuto è stato nascosto.";
   return fallback;
-}
-
-// ───────── Following ─────────
-export async function setFollow(uid, on) {
-  const q = supabase.from("follows");
-  const { error } = on ? await q.insert({ followee_id: uid }) : await q.delete().eq("followee_id", uid).eq("follower_id", (await me()).id);
-  if (error && error.code !== "23505") throw error;
-}
-
-export async function profileCounts(uid) {
-  const { data, error } = await supabase.rpc("profile_counts", { uid });
-  fail(error);
-  const row = Array.isArray(data) ? data[0] : data;
-  return { followers: Number(row?.followers ?? 0), following: Number(row?.following ?? 0), iFollow: !!row?.i_follow };
 }
 

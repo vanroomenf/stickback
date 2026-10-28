@@ -35,7 +35,6 @@ export default function StickbackApp({ userId }) {
   const [reportTarget, setReportTarget] = useState(null);
   const [blockTarget, setBlockTarget] = useState(null);
   const [settings, setSettings] = useState(false);
-  const [feedMode, setFeedMode] = useState("foryou"); // "foryou" | "friends"
   const [category, setCategory] = useState(null);
   const feedRef = useRef(null);
   const problemsRef = useRef(problems);
@@ -50,14 +49,14 @@ export default function StickbackApp({ userId }) {
   // ───────── Loading ─────────
   const refresh = useCallback(async () => {
     try {
-      const { problems: ps, users: us } = await api.loadFeed(userId, { mode: feedMode, category });
+      const { problems: ps, users: us } = await api.loadFeed(userId, { category });
       dispatch({ type: "setFeed", problems: ps, users: us });
       setLoadError(false);
     } catch {
       setLoadError(true);
       say("Non riesco a caricare i problemi. Controlla la connessione.");
     }
-  }, [userId, say, feedMode, category]);
+  }, [userId, say, category]);
 
   useEffect(() => { refresh(); }, [refresh]);
 
@@ -302,19 +301,13 @@ export default function StickbackApp({ userId }) {
       <View style={{ flex: 1 }}>
         <View style={[StyleSheet.absoluteFill, view !== "feed" && st.hidden]} pointerEvents={view === "feed" ? "auto" : "none"}>
           {problems.length ? (
-            <Feed key={`${feedMode}-${category}`} ref={feedRef} me={me} problems={problems} users={users} dispatch={act} focus={focus} topInset={topInset}
+            <Feed key={`feed-${category}`} ref={feedRef} me={me} problems={problems} users={users} dispatch={act} focus={focus} topInset={topInset}
               refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await refresh(); setRefreshing(false); }}
               onReply={(pid) => { setLastAdded(null); setSheet({ kind: "reply", pid }); }}
               onUser={(u) => openProfile(u, true)} onMore={setMore} savedSet={savedSet} onToggleSave={toggleSave} />
           ) : (
             <View style={[st.center, { flex: 1, paddingTop: topInset, paddingHorizontal: 32, gap: 14 }]}>
-              {feedMode === "friends" ? (
-                <>
-                  <Text style={st.emptyTitle}>{category ? "Niente in questa categoria" : "Qui vedi chi segui"}</Text>
-                  <Text style={st.centerTxt}>{category ? "Le persone che segui non hanno ancora problemi in questa categoria." : "Apri il profilo di qualcuno che ti fa ridere e tocca Segui: i suoi problemi arriveranno qui."}</Text>
-                  <Pressable style={st.retry} onPress={() => { setFeedMode("foryou"); setCategory(null); }}><Text style={st.retryTxt}>Vai a Per te</Text></Pressable>
-                </>
-              ) : category ? (
+              {category ? (
                 <>
                   <Text style={st.emptyTitle}>Niente in questa categoria</Text>
                   <Text style={st.centerTxt}>Nessun problema recente qui. Racconta il primo!</Text>
@@ -329,18 +322,14 @@ export default function StickbackApp({ userId }) {
               )}
             </View>
           )}
-          <FeedHeader topInset={insets.top} mode={feedMode} onMode={setFeedMode} category={category} onCategory={setCategory} />
+          <FeedHeader topInset={insets.top} category={category} onCategory={setCategory} />
         </View>
         {view === "profile" && profileUser && (
           <View style={StyleSheet.absoluteFill}>
             <Profile key={profileUser} me={me} user={profileUser} users={users} problems={problems} myStickers={myStickers}
               topInset={insets.top} showBack={profileBack} onBack={() => setView("feed")} onGo={goToProblem}
               onEdit={() => setSheet({ kind: "edit" })} onAddStickers={fromGallery} onPaste={fromClipboard}
-              onRemoveSticker={removeSticker} onSettings={() => setSettings(true)} onMore={setMore}
-              loadCounts={api.profileCounts} onFollow={async (uid, on) => {
-                try { await api.setFollow(uid, on); say(on ? `Ora segui @${profileUser}` : `Non segui più @${profileUser}`); return true; }
-                catch { oops(); return false; }
-              }} />
+              onRemoveSticker={removeSticker} onSettings={() => setSettings(true)} onMore={setMore} />
           </View>
         )}
       </View>
