@@ -34,6 +34,7 @@ export default function StickbackApp({ userId }) {
   const [more, setMore] = useState(null); // { kind: "problem" | "reply" | "user", id?, pid?, author }
   const [reportTarget, setReportTarget] = useState(null);
   const [blockTarget, setBlockTarget] = useState(null);
+  const [ask, setAsk] = useState(null); // "are you sure?" before deleting: { title, text, confirm, run }
   const [settings, setSettings] = useState(false);
   const [category, setCategory] = useState(null);
   const [postsVersion, setPostsVersion] = useState(0); // bumps when you delete or post, so the profile reloads
@@ -131,15 +132,31 @@ export default function StickbackApp({ userId }) {
   const savedSet = useMemo(() => new Set(myStickers.filter((s) => !s.example).map((st) => st.v)), [myStickers]);
   const toggleSave = async (sticker) => {
     if (savedSet.has(sticker.v)) {
-      dispatch({ type: "removeSticker", v: sticker.v });
-      say("Tolto dai tuoi sticker");
-      api.removeSavedSticker(sticker.v).catch(oops);
+      askRemoveSticker(sticker);
     } else {
       const clean = api.cleanSticker(sticker);
       dispatch({ type: "addStickers", stickers: [clean] });
       say("Salvato nei tuoi sticker");
       api.saveSticker(clean).catch(oops);
     }
+  };
+  const askRemoveSticker = (sticker) => setAsk({
+    title: "Togliere questo sticker?",
+    text: "Non lo troverai più tra i tuoi sticker. Le risposte in cui l'hai già usato restano come sono.",
+    confirm: "Togli",
+    run: () => removeSticker(sticker),
+  });
+  const askDelete = (t) => {
+    setMore(null);
+    setAsk(t.kind === "problem" ? {
+      title: "Eliminare il problema?",
+      text: "Sparisce per tutti, insieme a tutte le risposte che ha ricevuto. Non si può annullare.",
+      confirm: "Elimina", run: () => doDelete(t),
+    } : {
+      title: "Eliminare la risposta?",
+      text: "Sparisce per tutti, con le stelle che ha ricevuto. Non si può annullare.",
+      confirm: "Elimina", run: () => doDelete(t),
+    });
   };
   const removeSticker = (st) => {
     dispatch({ type: "removeSticker", v: st.v });
@@ -341,7 +358,7 @@ export default function StickbackApp({ userId }) {
             <Profile key={profileUser} me={me} user={profileUser} users={users} problems={problems} myStickers={myStickers}
               topInset={insets.top} showBack={profileBack} onBack={() => setView("feed")} onGo={goToProblem}
               onEdit={() => setSheet({ kind: "edit" })} onAddStickers={fromGallery} onPaste={fromClipboard}
-              onRemoveSticker={removeSticker} onSettings={() => setSettings(true)} onMore={setMore}
+              onRemoveSticker={askRemoveSticker} onSettings={() => setSettings(true)} onMore={setMore}
               loadPosts={loadPosts} postsVersion={postsVersion} />
           </View>
         )}
@@ -370,7 +387,9 @@ export default function StickbackApp({ userId }) {
       <MoreSheet target={more} me={me} onClose={() => setMore(null)}
         onReport={() => { setReportTarget(more); setMore(null); }}
         onBlock={() => { setBlockTarget(more.author); setMore(null); }}
-        onDelete={() => doDelete(more)} />
+        onDelete={() => askDelete(more)} />
+      <ConfirmSheet visible={!!ask} title={ask?.title ?? ""} text={ask?.text ?? ""} confirm={ask?.confirm ?? ""} danger
+        onClose={() => setAsk(null)} onConfirm={async () => { const run = ask.run; setAsk(null); await run(); }} />
       <ReportSheet target={reportTarget} onClose={() => setReportTarget(null)} onSend={sendReport} />
       <ConfirmSheet visible={!!blockTarget} title={`Bloccare @${blockTarget}?`} danger confirm="Blocca"
         text="Non vedrete più i problemi e le risposte l'uno dell'altro, e non potrà più risponderti. Non riceverà nessuna notifica. Puoi sbloccarlo dalle Impostazioni."

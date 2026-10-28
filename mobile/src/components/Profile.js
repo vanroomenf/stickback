@@ -84,7 +84,6 @@ export default function Profile({ me: myName, user, users, problems, myStickers,
           <View style={st.pitemM}>
             <StarIcon filled size={14} color={C.accent} />
             <Text style={st.small}>{fmt(p.stars)}</Text>
-            <Text style={st.small}>{p.memes.length} risposte</Text>
             <Text style={st.small}>{p.time}</Text>
             <View style={st.thumbs}>
               {orderReplies(p).slice(0, 3).map((m) => (

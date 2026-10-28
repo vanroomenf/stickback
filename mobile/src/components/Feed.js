@@ -139,7 +139,7 @@ function ProblemScreen({ me, p, first, height, width, users, dispatch, onReply, 
       </View>
 
       <View style={st.actions}>
-        <Text style={st.count}><Text style={{ color: C.fg, fontFamily: F.bold }}>{memes.length ? index + 1 : 0}</Text> / {memes.length} risposte</Text>
+        <View style={{ flex: 1 }} />
         <Pressable style={({ pressed }) => [st.reply, pressed && { opacity: 0.85 }]} onPress={() => onReply(p.id)}>
           <Text style={st.replyTxt}>Rispondi</Text>
         </Pressable>
