@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useReducer, useState } from "react";
-import { ME, fakeReplies, seed } from "./data.js";
+import { ME, fakeReplies, saveStickers, seed } from "./data.js";
 import { reducer } from "./store.js";
 import { filesToStickers } from "./lib/stickers.js";
 import { nextId } from "./lib/util.js";
@@ -42,6 +42,11 @@ export default function App() {
     say(stickers.length === 1 ? "Sticker aggiunto" : `${stickers.length} sticker aggiunti`);
   }, [say]);
 
+  // Keep your stickers on this phone
+  useEffect(() => {
+    if (!saveStickers(myStickers)) say("Il telefono non ha più spazio per altri sticker caricati.");
+  }, [myStickers, say]);
+
   useEffect(() => {
     const onPaste = (e) => {
       const files = [...(e.clipboardData?.files || [])];
@@ -55,6 +60,11 @@ export default function App() {
 
   const publishReply = (pid, { id, sticker, caption }) => {
     dispatch({ type: "addReply", pid, meme: { id, author: ME, stars: 1, starred: true, sticker, caption } });
+    // A GIPHY sticker you use goes into "I miei", like recent stickers on WhatsApp
+    if (sticker.giphy && sticker.type === "img") {
+      const { id: _gid, title: _t, ...keep } = sticker;
+      dispatch({ type: "addStickers", stickers: [keep] });
+    }
     setSheet(null);
     setFocus({ pid, mid: id, n: nextId() });
     say(sticker.type === "gif" ? "GIF pubblicata" : "Sticker pubblicato");

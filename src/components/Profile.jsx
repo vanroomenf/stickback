@@ -83,7 +83,7 @@ export default function Profile({ user, users, problems, myStickers, showBack, o
               <span className="tin"><b>+</b>Aggiungi</span>
             </label>
           </div>
-          <p className="note">Carica gli sticker dalla galleria del telefono, oppure incolla qui un'immagine copiata. Li ritrovi ogni volta che rispondi.</p>
+          <p className="note">Aggiungi i tuoi sticker dalla galleria del telefono, oppure incolla un'immagine copiata. Restano salvati su questo telefono e li ritrovi ogni volta che rispondi. Quelli che trovi già qui sono esempi da GIPHY.</p>
         </>
       )}
     </>

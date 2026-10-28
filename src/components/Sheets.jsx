@@ -48,7 +48,7 @@ export function ReplySheet({ problem, myStickers, lastAdded, onClose, onPublish 
               </button>
             ))}
           </div>
-          <p className="small">Tocca + per caricarli dalla galleria, oppure incolla qui un'immagine copiata.</p>
+          <p className="small">Tocca + per aggiungere i tuoi sticker dalla galleria, oppure incolla un'immagine copiata. Restano salvati su questo telefono. Gli sticker GIPHY che usi finiscono qui da soli.</p>
         </div>
       ) : (
         <GiphyPicker kind={src} selected={sticker} onSelect={setSticker} />

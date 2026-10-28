@@ -22,8 +22,11 @@ export function reducer(state, a) {
       return mapProblem(state, a.pid, (p) => ({ ...p, memes: [...p.memes, a.meme], stars: p.stars + (a.bump || 0) }));
     case "addProblem":
       return { ...state, problems: [a.problem, ...state.problems] };
-    case "addStickers":
-      return { ...state, myStickers: [...a.stickers, ...state.myStickers] };
+    case "addStickers": {
+      const fresh = a.stickers.map(({ example, ...st }) => st);
+      const seen = new Set(fresh.map((st) => st.v));
+      return { ...state, myStickers: [...fresh, ...state.myStickers.filter((st) => !seen.has(st.v))] };
+    }
     case "updateProfile":
       return { ...state, users: { ...state.users, [a.user]: { ...state.users[a.user], ...a.data } } };
     default:
