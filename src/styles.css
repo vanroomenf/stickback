@@ -190,7 +190,10 @@ img.sticker{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;
 .keyrow input{flex:1;min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 10px;color:var(--fg);font:500 14px var(--body)}
 .keyrow button{background:var(--accent);color:var(--accent-ink);font-weight:700;border-radius:10px;padding:0 14px}
 #gq{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:11px 12px;color:var(--fg);font:500 15px var(--body)}
-img.sticker.gif{border-radius:3cqi}
+/* GIFs fill the bottom of the card, straight, edge to edge; stickers keep their small tilt */
+.meme.gifcard .stk{margin:0 -6cqi -5cqi;background:#0d0b11}
+img.sticker.gif{transform:none;filter:none}
+.pitem .thumbs .meme.gifcard .stk{margin:0}
 .primary{background:var(--accent);color:var(--accent-ink);font-weight:700;border-radius:14px;padding:13px;font-size:15px}
 .primary:disabled{opacity:.4;cursor:not-allowed}
 

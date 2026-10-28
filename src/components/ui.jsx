@@ -60,7 +60,7 @@ export function StickerThumb({ sticker }) {
 // A reply: your text on top, the sticker or GIF below, kept separate
 export function StickerCard({ meme, placeholder }) {
   return (
-    <div className="meme" style={{ "--r": rot(meme.id) }}>
+    <div className={`meme${meme.sticker.type === "gif" ? " gifcard" : ""}`} style={{ "--r": rot(meme.id) }}>
       <p className={`caption${placeholder ? " ph" : ""}`}>{meme.caption}</p>
       <div className="stk"><StickerImage sticker={meme.sticker} /></div>
     </div>

@@ -33,15 +33,19 @@ export async function searchGiphy({ kind, query, key, signal }) {
   return data
     .map((g) => {
       const im = g.images || {};
-      const big = im.fixed_width || im.downsized || im.original || {};
-      const small = im.fixed_width_small || big;
+      // Full size for the reply card: the original as WebP when it is light enough, otherwise a reduced version
+      const orig = im.original || {};
+      const light = orig.webp && Number(orig.webp_size || 0) < 3_000_000;
+      const big = light ? orig.webp : (im.downsized_medium?.url || im.downsized?.url || orig.url || im.fixed_width?.url);
+      // 200px wide for the picker grid, sharp on high-density screens at ~100px cells
+      const grid = im.fixed_width || im.fixed_width_small || {};
       return {
         type: kind === "gifs" ? "gif" : "img",
         giphy: true,
         id: g.id,
         title: g.title || "",
-        v: big.webp || big.url,
-        thumb: small.webp || small.url,
+        v: big,
+        thumb: grid.webp || grid.url || big,
       };
     })
     .filter((g) => g.v);
