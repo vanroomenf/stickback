@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Stickback</title>
+<meta name="theme-color" content="#1a1622">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Stickback">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600;700&display=swap">
@@ -17,7 +21,9 @@
   --body:'Figtree',system-ui,-apple-system,sans-serif;
   color-scheme:dark;
 }
-html{box-sizing:border-box;height:100%;background:var(--page)}
+[hidden]{display:none!important}
+img{max-width:100%}
+html{box-sizing:border-box;height:100%;background:var(--page);-webkit-text-size-adjust:100%}
 *,*::before,*::after{box-sizing:inherit}
 body{height:100%;margin:0;background:var(--page);color:var(--fg);font-family:var(--body);
   display:flex;justify-content:center;align-items:center;
@@ -184,6 +190,12 @@ img.sticker{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;
   padding:9px 14px;border-radius:99px;opacity:0;pointer-events:none;transition:.25s;white-space:nowrap;max-width:90%;overflow:hidden;text-overflow:ellipsis}
 .toast.show{opacity:1;transform:translate(-50%,0)}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
+/* on a real phone: full screen, no device frame */
+@media (max-width:520px){
+  body{padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
+  .app{max-width:none;max-height:none;border-radius:0;box-shadow:none}
+}
 </style>
 </head>
 <body>
