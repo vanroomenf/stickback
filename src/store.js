@@ -27,6 +27,8 @@ export function reducer(state, a) {
       const seen = new Set(fresh.map((st) => st.v));
       return { ...state, myStickers: [...fresh, ...state.myStickers.filter((st) => !seen.has(st.v))] };
     }
+    case "removeSticker":
+      return { ...state, myStickers: state.myStickers.filter((st) => st.v !== a.v) };
     case "updateProfile":
       return { ...state, users: { ...state.users, [a.user]: { ...state.users[a.user], ...a.data } } };
     default:

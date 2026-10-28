@@ -1,11 +1,11 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ME } from "../data.js";
 import { orderReplies } from "../store.js";
-import { Avatar, CrownIcon, StarButton, StickerCard } from "./ui.jsx";
+import { Avatar, CrownIcon, SaveIcon, StarButton, StickerCard } from "./ui.jsx";
 
 const GAP = 12;
 
-function ProblemScreen({ p, first, users, dispatch, onReply, onUser, focusMid }) {
+function ProblemScreen({ p, first, users, dispatch, onReply, onUser, focusMid, savedSet, onToggleSave }) {
   const mine = p.author === ME;
   const carRef = useRef(null);
   const [index, setIndex] = useState(0);
@@ -77,10 +77,17 @@ function ProblemScreen({ p, first, users, dispatch, onReply, onUser, focusMid })
               <StickerCard meme={m} />
               <div className="meme-meta">
                 <button className="who" onClick={() => onUser(m.author)}>@{m.author}</button>
-                {p.winner === m.id && <span className="win"><CrownIcon /> Scelto dall’autore</span>}
+                {p.winner === m.id && <span className="win" title="Scelta dall’autore"><CrownIcon /> Migliore</span>}
                 {mine && p.winner !== m.id && (
                   <button className="pick" onClick={() => dispatch({ type: "pickWinner", pid: p.id, mid: m.id })}>
                     <CrownIcon /> Scegli
+                  </button>
+                )}
+                {m.author !== ME && m.sticker.type !== "emoji" && (
+                  <button className={`savebtn${savedSet.has(m.sticker.v) ? " on" : ""}`} aria-pressed={savedSet.has(m.sticker.v)}
+                    aria-label={savedSet.has(m.sticker.v) ? "Togli dai tuoi sticker" : "Salva nei tuoi sticker"}
+                    onClick={() => onToggleSave(m.sticker)}>
+                    <SaveIcon saved={savedSet.has(m.sticker.v)} />
                   </button>
                 )}
                 <StarButton on={m.starred} count={m.stars} label="Mi piace questa risposta"
@@ -105,7 +112,7 @@ function ProblemScreen({ p, first, users, dispatch, onReply, onUser, focusMid })
   );
 }
 
-export default function Feed({ problems, users, dispatch, onReply, onUser, focus, active }) {
+export default function Feed({ problems, users, dispatch, onReply, onUser, focus, active, savedSet, onToggleSave }) {
   const feedRef = useRef(null);
 
   // Scroll the feed to a problem when asked (new post, or tap from the profile)
@@ -138,7 +145,8 @@ export default function Feed({ problems, users, dispatch, onReply, onUser, focus
     <main className="feed" ref={feedRef}>
       {problems.map((p, i) => (
         <ProblemScreen key={p.id} p={p} first={i === 0} users={users} dispatch={dispatch}
-          onReply={onReply} onUser={onUser} focusMid={focus?.pid === p.id && focus.mid ? focus : null} />
+          onReply={onReply} onUser={onUser} focusMid={focus?.pid === p.id && focus.mid ? focus : null}
+          savedSet={savedSet} onToggleSave={onToggleSave} />
       ))}
     </main>
   );

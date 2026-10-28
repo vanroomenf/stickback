@@ -9,8 +9,24 @@ export const giphy = (id, type = "img", file = "giphy.webp") => ({
   thumb: `https://media.giphy.com/media/${id}/200w.webp`,
 });
 
-// Turn an image file (gallery upload or paste) into a sticker, shrunk to 320px so it stays light.
-export function fileToSticker(file) {
+const readAsDataUrl = (file) => new Promise((resolve, reject) => {
+  const r = new FileReader();
+  r.onload = () => resolve(r.result);
+  r.onerror = () => reject(new Error("unreadable file"));
+  r.readAsDataURL(file);
+});
+
+// Turn an image file (gallery upload, paste, or shared from another app) into a sticker.
+// Small GIF and WebP files are kept as they are, so animated stickers keep moving;
+// everything else is shrunk to 320px so it stays light.
+export async function fileToSticker(file) {
+  if ((file.type === "image/gif" || file.type === "image/webp") && file.size < 800_000) {
+    return { type: "img", v: await readAsDataUrl(file) };
+  }
+  return shrink(file);
+}
+
+function shrink(file) {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const img = new Image();

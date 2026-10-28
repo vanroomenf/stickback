@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useReducer, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
 import { ME, fakeReplies, saveStickers, seed } from "./data.js";
 import { reducer } from "./store.js";
 import { filesToStickers } from "./lib/stickers.js";
@@ -42,6 +42,34 @@ export default function App() {
     say(stickers.length === 1 ? "Sticker aggiunto" : `${stickers.length} sticker aggiunti`);
   }, [say]);
 
+  // Stickers shared from another app ("Share → Stickback" on Android) wait in a cache for us
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (!params.has("shared")) return;
+    window.history.replaceState(null, "", window.location.pathname);
+    (async () => {
+      try {
+        const cache = await caches.open("stickback-shared");
+        const keys = await cache.keys();
+        const blobs = [];
+        for (const k of keys) {
+          const res = await cache.match(k);
+          if (res) blobs.push(await res.blob());
+          await cache.delete(k);
+        }
+        if (!blobs.length) { say("Non è arrivato nessuno sticker. Prova a condividerlo di nuovo."); return; }
+        const stickers = await filesToStickers(blobs);
+        if (!stickers.length) { say("Questo file non è un'immagine. Condividi uno sticker o una foto."); return; }
+        dispatch({ type: "addStickers", stickers: stickers.reverse() });
+        setView("profile");
+        setProfileUser(ME);
+        say(stickers.length === 1 ? "Sticker aggiunto da un'altra app" : `${stickers.length} sticker aggiunti da un'altra app`);
+      } catch {
+        say("Non sono riuscito a leggere lo sticker condiviso.");
+      }
+    })();
+  }, [say]);
+
   // Keep your stickers on this phone
   useEffect(() => {
     if (!saveStickers(myStickers)) say("Il telefono non ha più spazio per altri sticker caricati.");
@@ -57,6 +85,19 @@ export default function App() {
     document.addEventListener("paste", onPaste);
     return () => document.removeEventListener("paste", onPaste);
   }, [addFiles]);
+
+  // Save someone else's sticker into yours, like on WhatsApp (tap again to remove it)
+  const savedSet = useMemo(() => new Set(myStickers.map((st) => st.v)), [myStickers]);
+  const toggleSave = (sticker) => {
+    if (savedSet.has(sticker.v)) {
+      dispatch({ type: "removeSticker", v: sticker.v });
+      say("Tolto dai tuoi sticker");
+    } else {
+      const { id: _gid, title: _t, ...keep } = sticker;
+      dispatch({ type: "addStickers", stickers: [keep] });
+      say("Salvato nei tuoi sticker");
+    }
+  };
 
   const publishReply = (pid, { id, sticker, caption }) => {
     dispatch({ type: "addReply", pid, meme: { id, author: ME, stars: 1, starred: true, sticker, caption } });
@@ -97,13 +138,14 @@ export default function App() {
           </div>
           <Feed problems={problems} users={users} dispatch={dispatch} focus={focus} active={view === "feed"}
             onReply={(pid) => { setLastAdded(null); setSheet({ kind: "reply", pid }); }}
-            onUser={(u) => openProfile(u, true)} />
+            onUser={(u) => openProfile(u, true)} savedSet={savedSet} onToggleSave={toggleSave} />
         </div>
         <section className={`view profile${view === "profile" ? "" : " off"}`} aria-label="Profilo">
           {view === "profile" && (
             <Profile key={profileUser} user={profileUser} users={users} problems={problems} myStickers={myStickers}
               showBack={profileBack} onBack={() => setView("feed")} onGo={goToProblem}
-              onEdit={() => setSheet({ kind: "edit" })} />
+              onEdit={() => setSheet({ kind: "edit" })}
+              onRemoveSticker={(v) => { dispatch({ type: "removeSticker", v }); say("Tolto dai tuoi sticker"); }} />
           )}
         </section>
       </div>

@@ -4,7 +4,7 @@ import { orderReplies } from "../store.js";
 import { fmt } from "../lib/util.js";
 import { Avatar, CrownIcon, StarIcon, StickerCard, StickerThumb } from "./ui.jsx";
 
-export default function Profile({ user, users, problems, myStickers, showBack, onBack, onGo, onEdit }) {
+export default function Profile({ user, users, problems, myStickers, showBack, onBack, onGo, onEdit, onRemoveSticker }) {
   const [tab, setTab] = useState("problemi");
   const me = user === ME;
   const info = users[user] || { name: user, bio: "Qui solo per gli sticker." };
@@ -77,13 +77,14 @@ export default function Profile({ user, users, problems, myStickers, showBack, o
       {tab === "sticker" && (
         <>
           <div className="sgrid">
-            {myStickers.map((st, i) => <div key={i} className="stile"><span className="tin"><StickerThumb sticker={st} /></span></div>)}
+            {myStickers.map((st, i) => <div key={st.v} className="stile"><span className="tin"><StickerThumb sticker={st} /></span>
+                <button className="rm" aria-label="Togli dai tuoi sticker" onClick={() => onRemoveSticker(st.v)}>×</button></div>)}
             <label className="addtile" htmlFor="fileIn" tabIndex={0}
               onKeyDown={(e) => { if (e.key === "Enter") document.getElementById("fileIn").click(); }}>
               <span className="tin"><b>+</b>Aggiungi</span>
             </label>
           </div>
-          <p className="note">Aggiungi i tuoi sticker dalla galleria del telefono, oppure incolla un'immagine copiata. Restano salvati su questo telefono e li ritrovi ogni volta che rispondi. Quelli che trovi già qui sono esempi da GIPHY.</p>
+          <p className="note">Aggiungi i tuoi sticker dalla galleria del telefono, oppure incolla un'immagine copiata. Restano salvati su questo telefono e li ritrovi ogni volta che rispondi. Puoi salvare anche gli sticker che usano gli altri, con il pulsante accanto alla stella. Quelli che trovi già qui all'inizio sono esempi da GIPHY.</p>
         </>
       )}
     </>

@@ -136,6 +136,11 @@ img.sticker{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;
 .stile{position:relative;height:0;padding-bottom:100%;border-radius:14px;background:var(--surface);display:grid;place-items:center;font-size:34px;container-type:inline-size;overflow:hidden}
 .tin{position:absolute;inset:0;display:grid;place-items:center}
 .stile img{width:78%;height:78%;object-fit:contain}
+.stile .rm{position:absolute;top:5px;right:5px;width:24px;height:24px;border-radius:50%;background:rgba(10,8,14,.72);color:#fff;font-size:16px;line-height:1;display:grid;place-items:center;z-index:1}
+.stile .rm:hover{background:#000}
+.savebtn{flex:none;display:inline-grid;place-items:center;width:34px;height:31px;border-radius:99px;background:var(--surface);border:1px solid var(--line);color:var(--muted)}
+.savebtn:hover{color:var(--fg)}
+.savebtn.on{background:var(--fg);border-color:var(--fg);color:var(--bg)}
 .addtile{position:relative;height:0;padding-bottom:100%;border-radius:14px;border:2px dashed var(--line);display:block;
   color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;text-align:center}
 .addtile .tin{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
