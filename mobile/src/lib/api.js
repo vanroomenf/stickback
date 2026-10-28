@@ -110,7 +110,7 @@ export async function updateProfile(uid, { name, bio }) {
 }
 
 export async function loadMyProfile(uid) {
-  const { data, error } = await supabase.from("profiles").select(PROFILE).eq("id", uid).single();
+  const { data, error } = await supabase.from("profiles").select(`${PROFILE}, terms_accepted_at, banned`).eq("id", uid).single();
   fail(error);
   return data;
 }
@@ -154,4 +154,79 @@ export async function ensureUploaded(sticker) {
   fail(error);
   const { data } = supabase.storage.from("stickers").getPublicUrl(path);
   return { type: "img", v: data.publicUrl };
+}
+
+// ───────── Safety ─────────
+export const REPORT_REASONS = [
+  ["bullismo", "Bullismo o molestie", "Prende in giro, insulta o minaccia qualcuno"],
+  ["dati_personali", "Fa riconoscere qualcuno", "Nome, foto, scuola o altri dati di una persona vera"],
+  ["odio", "Odio o violenza", "Contro un gruppo di persone, o incita alla violenza"],
+  ["sessuale", "Contenuti sessuali", "Immagini o testi sessuali espliciti"],
+  ["autolesionismo", "Qualcuno potrebbe stare male", "Parla di farsi del male o di suicidio"],
+  ["spam", "Spam o truffa", "Pubblicità, link sospetti, messaggi ripetuti"],
+  ["altro", "Altro", "Viola le regole in un altro modo"],
+];
+
+export async function report({ problemId = null, replyId = null, userId = null, reason, details = "" }) {
+  const { error } = await supabase.from("reports").insert({
+    problem_id: problemId, reply_id: replyId, reported_user_id: userId, reason, details: details.slice(0, 300),
+  });
+  if (error && error.code !== "23505") throw error; // already reported: fine
+}
+
+export async function blockUser(uid) {
+  const { error } = await supabase.from("blocks").insert({ blocked_id: uid });
+  if (error && error.code !== "23505") throw error;
+}
+
+export async function unblockUser(uid) {
+  const { error } = await supabase.from("blocks").delete().eq("blocked_id", uid);
+  fail(error);
+}
+
+export async function loadBlocked() {
+  const { data, error } = await supabase
+    .from("blocks")
+    .select("blocked_id, created_at, profile:profiles!blocks_blocked_id_fkey(username, name)")
+    .order("created_at", { ascending: false });
+  fail(error);
+  return data.map((b) => ({ id: b.blocked_id, username: b.profile?.username ?? "utente", name: b.profile?.name ?? "" }));
+}
+
+export async function deleteProblem(id) {
+  const { error } = await supabase.from("problems").delete().eq("id", id);
+  fail(error);
+}
+
+export async function deleteReply(id) {
+  const { error } = await supabase.from("replies").delete().eq("id", id);
+  fail(error);
+}
+
+export async function acceptTerms() {
+  const { error } = await supabase.rpc("accept_terms", { is_16_or_older: true });
+  fail(error);
+}
+
+// Deletes your uploaded images, then the account with everything in it
+export async function deleteAccount() {
+  const uid = (await me()).id;
+  const bucket = supabase.storage.from("stickers");
+  for (;;) {
+    const { data, error } = await bucket.list(uid, { limit: 100 });
+    if (error || !data?.length) break;
+    const { error: rmError } = await bucket.remove(data.map((f) => `${uid}/${f.name}`));
+    if (rmError) break;
+  }
+  const { error } = await supabase.rpc("delete_my_account");
+  fail(error);
+  await supabase.auth.signOut();
+}
+
+// Turn database errors into something people understand
+export function explainError(e, fallback) {
+  const m = `${e?.message || ""} ${e?.details || ""}`.toLowerCase();
+  if (m.includes("contenuto_non_ammesso")) return "Il testo contiene parole non ammesse. Riformulalo.";
+  if (m.includes("row-level security")) return "Non puoi farlo: forse l'utente è bloccato o il contenuto è stato nascosto.";
+  return fallback;
 }

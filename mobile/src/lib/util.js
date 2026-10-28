@@ -22,3 +22,22 @@ export function ago(iso) {
   if (s < 604800) return `${Math.floor(s / 86400)} g`;
   return new Date(iso).toLocaleDateString("it-IT", { day: "numeric", month: "short" });
 }
+
+// "GG/MM/AAAA" → age in whole years, or null if the date isn't valid
+export function ageFrom(text) {
+  const m = /^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/.exec(text.trim());
+  if (!m) return null;
+  const [d, mo, y] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  const born = new Date(y, mo - 1, d);
+  if (born.getFullYear() !== y || born.getMonth() !== mo - 1 || born.getDate() !== d) return null;
+  const now = new Date();
+  if (born > now || y < 1900) return null;
+  let age = now.getFullYear() - y;
+  if (now.getMonth() < mo - 1 || (now.getMonth() === mo - 1 && now.getDate() < d)) age--;
+  return age;
+}
+
+export const MIN_AGE = 16;
+export const RULES_URL = "https://vanroomenf.github.io/stickback/regole.html";
+export const PRIVACY_URL = "https://vanroomenf.github.io/stickback/privacy.html";
+export const TERMS_VERSION = "2026-10";

@@ -7,7 +7,7 @@ import { Avatar, SaveIcon, StarButton, StickerCard } from "./ui.js";
 const GAP = 12;
 const SIDE = 20;
 
-function ProblemScreen({ me, p, first, height, width, users, dispatch, onReply, onUser, focusMid, savedSet, onToggleSave }) {
+function ProblemScreen({ me, p, first, height, width, users, dispatch, onReply, onUser, onMore, focusMid, savedSet, onToggleSave }) {
   const mine = p.author === me;
   const listRef = useRef(null);
   const [index, setIndex] = useState(0);
@@ -75,6 +75,10 @@ function ProblemScreen({ me, p, first, height, width, users, dispatch, onReply, 
               <SaveIcon saved={saved} color={saved ? C.bg : C.muted} />
             </Pressable>
           )}
+          <Pressable style={st.moreSmall} hitSlop={8} onPress={() => onMore({ kind: "reply", id: m.id, pid: p.id, author: m.author })}
+            accessibilityLabel="Altre azioni sulla risposta">
+            <Text style={st.moreTxt}>⋯</Text>
+          </Pressable>
           <StarButton on={m.starred} count={m.stars} label="Mi piace questa risposta"
             onToggle={() => dispatch({ type: "starReply", pid: p.id, mid: m.id })} />
         </View>
@@ -92,6 +96,10 @@ function ProblemScreen({ me, p, first, height, width, users, dispatch, onReply, 
           </Pressable>
           <Text style={st.muted}>· {p.time}</Text>
           {mine && <View style={st.yours}><Text style={st.yoursTxt}>Il tuo problema</Text></View>}
+          <Pressable style={st.more} hitSlop={10} onPress={() => onMore({ kind: "problem", id: p.id, author: p.author })}
+            accessibilityLabel="Altre azioni sul problema">
+            <Text style={st.moreTxt}>⋯</Text>
+          </Pressable>
         </View>
         <View style={st.prow}>
           <Text style={st.ptext}>{p.text}</Text>
@@ -182,6 +190,9 @@ const st = StyleSheet.create({
   ulink: { flexDirection: "row", alignItems: "center", gap: 7 },
   handle: { color: C.fg, fontFamily: F.semi, fontSize: 13 },
   muted: { color: C.muted, fontFamily: F.body, fontSize: 13 },
+  more: { marginLeft: "auto", paddingHorizontal: 6 },
+  moreSmall: { paddingHorizontal: 2 },
+  moreTxt: { color: C.muted, fontSize: 20, lineHeight: 22, fontFamily: F.bold },
   yours: { backgroundColor: C.accent, borderRadius: 99, paddingHorizontal: 8, paddingVertical: 2 },
   yoursTxt: { color: C.accentInk, fontFamily: F.bold, fontSize: 11 },
   prow: { flexDirection: "row", alignItems: "flex-start", gap: 12 },

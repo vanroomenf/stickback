@@ -11,6 +11,7 @@ import Feed from "./components/Feed.js";
 import Profile from "./components/Profile.js";
 import { EditProfileSheet, ProblemSheet, ReplySheet } from "./components/Sheets.js";
 import { Avatar, HomeIcon, Toast } from "./components/ui.js";
+import { ConfirmSheet, MoreSheet, ReportSheet, SettingsSheet, TermsGate } from "./components/Safety.js";
 
 const TOPBAR = 52;
 
@@ -29,6 +30,11 @@ export default function StickbackApp({ userId }) {
   const [lastAdded, setLastAdded] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [loadError, setLoadError] = useState(false);
+  const [gate, setGate] = useState(null); // "terms" | "banned" | null
+  const [more, setMore] = useState(null); // { kind: "problem" | "reply" | "user", id?, pid?, author }
+  const [reportTarget, setReportTarget] = useState(null);
+  const [blockTarget, setBlockTarget] = useState(null);
+  const [settings, setSettings] = useState(false);
   const feedRef = useRef(null);
   const problemsRef = useRef(problems);
   problemsRef.current = problems;
@@ -58,6 +64,7 @@ export default function StickbackApp({ userId }) {
         dispatch({ type: "setUsers", users: { [profile.username]: { id: profile.id, name: profile.name, bio: profile.bio } } });
         setMe(profile.username);
         setProfileUser(profile.username);
+        setGate(profile.banned ? "banned" : profile.terms_accepted_at ? null : "terms");
       } catch {
         setLoadError(true);
       }
@@ -174,8 +181,8 @@ export default function StickbackApp({ userId }) {
       }
       setFocus({ pid, mid: id, n: nextId() });
       say(stored.type === "gif" ? "GIF pubblicata" : "Sticker pubblicato");
-    } catch {
-      say("Non sono riuscito a pubblicare. Controlla la connessione e riprova.");
+    } catch (e) {
+      say(api.explainError(e, "Non sono riuscito a pubblicare. Controlla la connessione e riprova."));
     }
   };
 
@@ -187,8 +194,8 @@ export default function StickbackApp({ userId }) {
       setView("feed");
       setTimeout(() => feedRef.current?.scrollToProblem(row.id), 50);
       say("Problema pubblicato");
-    } catch {
-      say("Non sono riuscito a pubblicare. Controlla la connessione e riprova.");
+    } catch (e) {
+      say(api.explainError(e, "Non sono riuscito a pubblicare. Controlla la connessione e riprova."));
     }
   };
 
@@ -198,13 +205,80 @@ export default function StickbackApp({ userId }) {
     try {
       await api.updateProfile(userId, data);
       say("Profilo aggiornato");
-    } catch { oops(); }
+    } catch (e) {
+      say(api.explainError(e, "Non sono riuscito a salvare. Controlla la connessione e riprova."));
+      refresh();
+    }
   };
 
   const signOut = () => supabase.auth.signOut();
 
+  // ───────── Safety: report, block, delete ─────────
+  const removeLocally = (fn) => dispatch({ type: "setFeed", problems: fn(problemsRef.current), users: {} });
+
+  const sendReport = async (reason, details) => {
+    const t = reportTarget;
+    try {
+      await api.report({
+        problemId: t.kind === "problem" ? t.id : null,
+        replyId: t.kind === "reply" ? t.id : null,
+        userId: users[t.author]?.id ?? null,
+        reason, details,
+      });
+      setReportTarget(null);
+      // what you reported disappears for you right away
+      if (t.kind === "problem") removeLocally((ps) => ps.filter((p) => p.id !== t.id));
+      if (t.kind === "reply") removeLocally((ps) => ps.map((p) => ({ ...p, memes: p.memes.filter((m) => m.id !== t.id) })));
+      say("Segnalazione inviata. Grazie!");
+    } catch { oops(); }
+  };
+
+  const doBlock = async () => {
+    const who = blockTarget;
+    const uid = users[who]?.id;
+    if (!uid) return;
+    try {
+      await api.blockUser(uid);
+      setBlockTarget(null);
+      removeLocally((ps) => ps.filter((p) => p.author !== who).map((p) => ({ ...p, memes: p.memes.filter((m) => m.author !== who) })));
+      if (view === "profile" && profileUser === who) setView("feed");
+      say(`@${who} è bloccato`);
+    } catch { oops(); }
+  };
+
+  const doDelete = async (t) => {
+    setMore(null);
+    try {
+      if (t.kind === "problem") {
+        await api.deleteProblem(t.id);
+        removeLocally((ps) => ps.filter((p) => p.id !== t.id));
+      } else {
+        await api.deleteReply(t.id);
+        removeLocally((ps) => ps.map((p) => ({ ...p, memes: p.memes.filter((m) => m.id !== t.id) })));
+      }
+      say("Eliminato");
+    } catch { oops(); }
+  };
+
+  const unblock = async (b) => {
+    try { await api.unblockUser(b.id); say(`@${b.username} sbloccato`); refresh(); } catch { oops(); }
+  };
+
+  const deleteAccount = async () => {
+    try { await api.deleteAccount(); } catch { say("Non sono riuscito a eliminare l'account. Riprova."); }
+  };
+
   const replyTo = sheet?.kind === "reply" ? problems.find((p) => p.id === sheet.pid) : null;
   const topInset = insets.top + TOPBAR;
+
+  if (gate) {
+    return (
+      <TermsGate banned={gate === "banned"} onSignOut={signOut}
+        onAccept={async () => {
+          try { await api.acceptTerms(); setGate(null); } catch { say("Non sono riuscito a salvare. Riprova."); }
+        }} />
+    );
+  }
 
   if (!me || !loaded) {
     return (
@@ -228,7 +302,7 @@ export default function StickbackApp({ userId }) {
             <Feed ref={feedRef} me={me} problems={problems} users={users} dispatch={act} focus={focus} topInset={topInset}
               refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await refresh(); setRefreshing(false); }}
               onReply={(pid) => { setLastAdded(null); setSheet({ kind: "reply", pid }); }}
-              onUser={(u) => openProfile(u, true)} savedSet={savedSet} onToggleSave={toggleSave} />
+              onUser={(u) => openProfile(u, true)} onMore={setMore} savedSet={savedSet} onToggleSave={toggleSave} />
           ) : (
             <View style={[st.center, { flex: 1, paddingTop: topInset, paddingHorizontal: 32, gap: 14 }]}>
               <Text style={st.emptyTitle}>Ancora nessun problema</Text>
@@ -245,7 +319,7 @@ export default function StickbackApp({ userId }) {
             <Profile key={profileUser} me={me} user={profileUser} users={users} problems={problems} myStickers={myStickers}
               topInset={insets.top} showBack={profileBack} onBack={() => setView("feed")} onGo={goToProblem}
               onEdit={() => setSheet({ kind: "edit" })} onAddStickers={fromGallery} onPaste={fromClipboard}
-              onRemoveSticker={removeSticker} onSignOut={signOut} />
+              onRemoveSticker={removeSticker} onSettings={() => setSettings(true)} onMore={setMore} />
           </View>
         )}
       </View>
@@ -270,6 +344,16 @@ export default function StickbackApp({ userId }) {
       <ReplySheet visible={!!replyTo} problem={replyTo} myStickers={myStickers} lastAdded={lastAdded} onClose={close}
         onPublish={(r) => publishReply(replyTo.id, r)} onAddStickers={fromGallery} onPaste={fromClipboard} />
       <ProblemSheet visible={sheet?.kind === "problem"} onClose={close} onPublish={publishProblem} />
+      <MoreSheet target={more} me={me} onClose={() => setMore(null)}
+        onReport={() => { setReportTarget(more); setMore(null); }}
+        onBlock={() => { setBlockTarget(more.author); setMore(null); }}
+        onDelete={() => doDelete(more)} />
+      <ReportSheet target={reportTarget} onClose={() => setReportTarget(null)} onSend={sendReport} />
+      <ConfirmSheet visible={!!blockTarget} title={`Bloccare @${blockTarget}?`} danger confirm="Blocca"
+        text="Non vedrete più i problemi e le risposte l'uno dell'altro, e non potrà più risponderti. Non riceverà nessuna notifica. Puoi sbloccarlo dalle Impostazioni."
+        onClose={() => setBlockTarget(null)} onConfirm={doBlock} />
+      <SettingsSheet visible={settings} loadBlocked={api.loadBlocked} onUnblock={unblock} onClose={() => setSettings(false)}
+        onSignOut={() => { setSettings(false); signOut(); }} onDeleteAccount={deleteAccount} />
       <EditProfileSheet visible={sheet?.kind === "edit"} profile={users[me] || { name: "", bio: "" }} onClose={close} onSave={saveProfile} />
     </View>
   );

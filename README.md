@@ -105,6 +105,23 @@ Configurazione, una volta sola:
 
 Regole di sicurezza principali: per leggere bisogna aver fatto l'accesso; ognuno pubblica, mette stelle e salva sticker solo a nome proprio; il testo dei problemi non si modifica dopo la pubblicazione; ognuno carica immagini solo nella propria cartella.
 
+## Sicurezza e moderazione
+
+Seconda migrazione: `supabase/migrations/0002_moderation.sql` (da eseguire nell'SQL Editor dopo la prima).
+
+- **Età minima 16 anni**: alla registrazione l'app chiede la data di nascita (non viene salvata) e l'accettazione delle regole. Gli account creati prima lo confermano al primo accesso. Senza conferma non si può pubblicare.
+- **Segnala** (menu ⋯ su problemi, risposte e profili) con motivo; dopo 3 segnalazioni da persone diverse il contenuto si nasconde da solo.
+- **Blocca**: i due utenti non vedono più i contenuti l'uno dell'altro e non possono rispondersi. Sblocco da Profilo → Impostazioni.
+- **Filtro parole**: tabella `blocked_terms` (si modifica dal Table Editor).
+- **Elimina** i propri problemi e risposte; **elimina account** da Impostazioni.
+- **Regole** e **privacy**: `public/regole.html` e `public/privacy.html`, pubblicate su https://vanroomenf.github.io/stickback/regole.html e /privacy.html. Prima del lancio vanno completati i campi evidenziati (titolare e contatto).
+
+**Come moderare** (dalla dashboard di Supabase):
+1. SQL Editor → `select * from moderation.queue;` mostra le segnalazioni, le aperte per prime, con contenuto, autore e numero di segnalazioni.
+2. Per nascondere: Table Editor → `problems` o `replies` → `hidden = true` (oppure eliminare la riga).
+3. Per sospendere un utente: `profiles` → `banned = true`.
+4. Chiudere la segnalazione: `reports` → `status = 'risolta'` o `'respinta'`.
+
 ## Prossimi passi per l'app negli store
 
 - **Condividi → Stickback anche su iPhone**: con una Share Extension nell'app nativa.

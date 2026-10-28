@@ -5,7 +5,7 @@ import { fmt, hue, initialOf } from "../lib/util.js";
 import { C, F } from "../theme.js";
 import { StarIcon, StickerCard, StickerImage } from "./ui.js";
 
-export default function Profile({ me: myName, user, users, problems, myStickers, showBack, onBack, onGo, onEdit, onAddStickers, onPaste, onRemoveSticker, onSignOut, topInset }) {
+export default function Profile({ me: myName, user, users, problems, myStickers, showBack, onBack, onGo, onEdit, onAddStickers, onPaste, onRemoveSticker, onSettings, onMore, topInset }) {
   const [tab, setTab] = useState("problemi");
   const { width } = useWindowDimensions();
   const me = user === myName;
@@ -25,6 +25,12 @@ export default function Profile({ me: myName, user, users, problems, myStickers,
       <View style={st.phead}>
         {showBack && <Pressable onPress={onBack} hitSlop={8}><Text style={st.back}>‹ Indietro</Text></Pressable>}
         {!me && <Text style={st.ttl}>@{user}</Text>}
+        {!me && (
+          <Pressable style={{ marginLeft: "auto", paddingHorizontal: 6 }} hitSlop={10} onPress={() => onMore({ kind: "user", author: user })}
+            accessibilityLabel="Segnala o blocca">
+            <Text style={{ color: C.muted, fontSize: 22, fontFamily: F.bold }}>⋯</Text>
+          </Pressable>
+        )}
       </View>
       <View style={st.pinfo}>
         <View style={[st.bigav, { backgroundColor: `hsl(${hue(user)}, 60%, 48%)` }]}>
@@ -39,7 +45,7 @@ export default function Profile({ me: myName, user, users, problems, myStickers,
       {me && (
         <View style={{ flexDirection: "row", gap: 10 }}>
           <Pressable style={st.editbtn} onPress={onEdit}><Text style={st.editTxt}>Modifica profilo</Text></Pressable>
-          <Pressable style={st.editbtn} onPress={onSignOut}><Text style={[st.editTxt, { color: C.muted }]}>Esci</Text></Pressable>
+          <Pressable style={st.editbtn} onPress={onSettings}><Text style={[st.editTxt, { color: C.muted }]}>Impostazioni</Text></Pressable>
         </View>
       )}
 

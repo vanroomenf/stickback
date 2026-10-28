@@ -4,6 +4,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { supabase } from "../lib/supabase.js";
 import { C, F } from "../theme.js";
 import { Primary } from "./ui.js";
+import { BirthDateField, RulesCheckbox } from "./Safety.js";
+import { MIN_AGE, TERMS_VERSION, ageFrom } from "../lib/util.js";
 
 const USERNAME = /^[a-z0-9._]{3,20}$/;
 
@@ -16,6 +18,7 @@ function explain(error) {
   if (m.includes("password") && m.includes("characters")) return "La password deve avere almeno 6 caratteri.";
   if (m.includes("rate limit") || m.includes("too many")) return "Troppi tentativi in poco tempo. Riprova tra qualche minuto.";
   if (m.includes("network") || m.includes("fetch")) return "Connessione assente. Controlla internet e riprova.";
+  if (m.includes("database error saving new user")) return "Questo nome utente non è ammesso. Scegline un altro.";
   return error?.message || "Qualcosa non ha funzionato. Riprova.";
 }
 
@@ -27,21 +30,27 @@ export default function AuthScreen() {
   const [username, setUsername] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState(null); // { kind: "error" | "info", text }
+  const [birth, setBirth] = useState("");
+  const [rules, setRules] = useState(false);
+  const [tooYoung, setTooYoung] = useState(false);
 
   const signup = mode === "signup";
   const cleanUser = username.trim().toLowerCase();
   const userOk = !signup || USERNAME.test(cleanUser);
-  const canSend = email.includes("@") && password.length >= 6 && userOk && !busy;
+  const age = ageFrom(birth);
+  const canSend = email.includes("@") && password.length >= 6 && userOk && !busy && (!signup || (age !== null && rules));
 
   const submit = async () => {
     setBusy(true);
     setMsg(null);
     try {
       if (signup) {
+        if (age < MIN_AGE) { setTooYoung(true); return; }
         const { data, error } = await supabase.auth.signUp({
           email: email.trim(),
           password,
-          options: { data: { username: cleanUser, name: cleanUser } },
+          // the date of birth is not sent: only that you are old enough and accepted the rules
+          options: { data: { username: cleanUser, name: cleanUser, age_ok: "true", terms: TERMS_VERSION } },
         });
         if (error) throw error;
         if (!data.session) {
@@ -94,6 +103,10 @@ export default function AuthScreen() {
             style={st.input} textContentType={signup ? "newPassword" : "password"} autoComplete={signup ? "new-password" : "password"}
             returnKeyType="go" onSubmitEditing={() => canSend && submit()} />
         </View>
+
+        {signup && <BirthDateField value={birth} onChange={(t) => { setBirth(t); setTooYoung(false); }} />}
+        {signup && <RulesCheckbox checked={rules} onToggle={() => setRules(!rules)} />}
+        {tooYoung && <Text style={[st.msg, st.err]}>Stickback è per chi ha almeno {MIN_AGE} anni. Per ora non puoi creare un account.</Text>}
 
         {msg && <Text style={[st.msg, msg.kind === "error" ? st.err : st.info]}>{msg.text}</Text>}
 

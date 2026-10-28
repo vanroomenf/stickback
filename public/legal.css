@@ -1,0 +1,31 @@
+/* Shared style for the rules and privacy pages: same palette as the app, built for reading */
+:root{
+  --bg:#1a1622; --surface:#262030; --line:#3a3245; --fg:#f5f1fb; --muted:#a59cb5; --accent:#ffd23f;
+  --display:'Bricolage Grotesque','Arial Black',system-ui,sans-serif;
+  --body:'Figtree',system-ui,-apple-system,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.65 var(--body);
+  padding:48px max(20px,env(safe-area-inset-right,0px)) 64px max(20px,env(safe-area-inset-left,0px))}
+main{max-width:680px;margin:0 auto}
+.logo{font:800 22px var(--display);letter-spacing:-.02em;color:var(--fg);text-decoration:none}
+.logo b{color:var(--accent)}
+h1{font:800 clamp(30px,6vw,40px)/1.1 var(--display);letter-spacing:-.02em;margin:28px 0 8px;text-wrap:balance}
+.updated{color:var(--muted);font-size:14px;margin:0 0 28px}
+.lead{font-size:18px;color:var(--fg)}
+h2{font:800 21px/1.25 var(--display);margin:36px 0 10px;text-wrap:balance}
+p,li{color:#ddd6e8}
+ul{padding-left:1.2em}
+li{margin:6px 0}
+strong{color:var(--fg)}
+a{color:var(--accent)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin:18px 0}
+.card p{margin:6px 0}
+.todo{background:#4a3a12;color:#ffe9a8;border-radius:6px;padding:1px 6px;font-weight:600}
+table{width:100%;border-collapse:collapse;font-size:15px}
+.tablewrap{overflow-x:auto;margin:12px 0}
+th,td{text-align:left;vertical-align:top;padding:10px 12px;border-bottom:1px solid var(--line)}
+th{color:var(--muted);font-weight:600;font-size:13px;text-transform:uppercase;letter-spacing:.06em}
+footer{margin-top:48px;color:var(--muted);font-size:14px}
