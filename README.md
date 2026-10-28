@@ -19,7 +19,9 @@ Il nome unisce *sticker* e *clapback*, cioè la risposta pronta e ironica.
 
 Il prototipo cliccabile è in [`prototype/index.html`](prototype/index.html). È un singolo file HTML senza dipendenze: si apre direttamente nel browser.
 
-Per provarlo online puoi attivare GitHub Pages (Settings → Pages → branch `main`) e aprire `https://vanroomenf.github.io/stickback/prototype/`.
+Versione online: **https://vanroomenf.github.io/stickback/**
+
+Ogni modifica caricata su `main` viene pubblicata da sola in un paio di minuti (workflow in `.github/workflows/pages.yml`).
 
 Nel prototipo:
 - i dati sono di esempio e restano solo in memoria (si azzerano ricaricando la pagina);
