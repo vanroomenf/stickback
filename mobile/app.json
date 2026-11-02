@@ -10,13 +10,21 @@
       "supportsTablet": false,
       "infoPlist": {
         "CFBundleAllowMixedLocalizations": true
+      },
+      "bundleIdentifier": "app.stickback",
+      "config": {
+        "usesNonExemptEncryption": false
       }
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#1a1622",
         "foregroundImage": "./assets/android-icon-foreground.png"
-      }
+      },
+      "package": "app.stickback",
+      "blockedPermissions": [
+        "android.permission.SYSTEM_ALERT_WINDOW"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -27,7 +35,9 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Stickback uses your photos to add your stickers."
+          "photosPermission": "Stickback uses your photos to add your stickers.",
+          "cameraPermission": false,
+          "microphonePermission": false
         }
       ],
       "expo-localization",
@@ -43,6 +53,11 @@
       "en": "./locales/en.json",
       "de": "./locales/de.json",
       "fr": "./locales/fr.json"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "bf62fb88-8c1c-4319-8bb5-afab41d1528c"
+      }
     }
   }
 }

@@ -159,6 +159,25 @@ Migrazione `supabase/migrations/0006_week_and_push.sql`.
 - **Password dimenticata**: dall'accesso, l'app manda un codice per email e si sceglie la nuova password. Su Supabase il modello email "Reset Password" deve contenere `{{ .Token }}`.
 - **Benvenuto**: tre schermate alla prima apertura (racconta, rispondi con uno sticker, dai le stelle).
 
+## Build per gli store (EAS)
+
+Configurazione in `mobile/app.json` e `mobile/eas.json`.
+
+- **Identificativo dell'app**: `app.stickback`, sia su iOS (`bundleIdentifier`) sia su Android (`package`). Non si può cambiare dopo la prima pubblicazione.
+- **Progetto Expo**: `extra.eas.projectId` in `app.json`.
+- **Numeri di build**: li tiene EAS (`appVersionSource: remote`) e li aumenta a ogni build di produzione. La versione mostrata negli store è `version` in `app.json`.
+- **Permessi**: solo galleria e notifiche. Fotocamera, microfono e finestre sovrapposte sono tolti su Android, perché l'app non li usa.
+- **Crittografia**: l'app usa solo HTTPS, quindi `usesNonExemptEncryption: false` e Apple non chiede documenti per l'esportazione.
+
+Profili di `eas.json`, da lanciare nella cartella `mobile`:
+
+```bash
+npx eas-cli@latest build --profile development --platform android   # app di sviluppo, al posto di Expo Go
+npx eas-cli@latest build --profile preview --platform android        # APK da installare e far provare
+npx eas-cli@latest build --profile production --platform all         # per App Store e Google Play
+npx eas-cli@latest submit --platform ios                             # invio a App Store Connect / TestFlight
+```
+
 ## Prossimi passi per l'app negli store
 
 - **Condividi → Stickback anche su iPhone**: con una Share Extension nell'app nativa.
