@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  Animated, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View,
+  Animated, KeyboardAvoidingView, Modal, PanResponder, Platform, Pressable, ScrollView, StyleSheet, Text, View,
 } from "react-native";
 import { Image } from "expo-image";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -166,33 +166,90 @@ const captionSize = (text = "") =>
   text.length <= 24 ? { fontSize: 18, lineHeight: 23 } : text.length <= 38 ? { fontSize: 16, lineHeight: 21 } : { fontSize: 14.5, lineHeight: 19 };
 
 // ───────── Sheets, toasts, buttons ─────────
+// Bottom sheet: the page behind only dims, the sheet slides up on its own and follows your finger.
+// Drag the top (handle and title) down to close it, or tap outside.
 export function Sheet({ visible, title, onClose, children }) {
   const insets = useSafeAreaInsets();
   const st = useStyles(sheetStyles);
+  const [mounted, setMounted] = useState(visible);
+  const y = useRef(new Animated.Value(800)).current;
+  const fade = useRef(new Animated.Value(0)).current;
+  const height = useRef(600);
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+  // keep showing the last content while it slides away
+  const last = useRef({ title, children });
+  if (visible) last.current = { title, children };
+
+  // open: once the sheet is on screen, slide it in
+  useEffect(() => {
+    if (!visible || !mounted) return;
+    y.setValue(height.current);
+    Animated.parallel([
+      Animated.timing(fade, { toValue: 1, duration: 200, useNativeDriver: true }),
+      Animated.spring(y, { toValue: 0, damping: 26, stiffness: 260, mass: 0.9, useNativeDriver: true }),
+    ]).start();
+  }, [visible, mounted]); // eslint-disable-line react-hooks/exhaustive-deps
+  // close: slide it away, then take it off screen
+  useEffect(() => {
+    if (visible) {
+      setMounted(true);
+    } else if (mounted) {
+      Animated.parallel([
+        Animated.timing(fade, { toValue: 0, duration: 180, useNativeDriver: true }),
+        Animated.timing(y, { toValue: height.current, duration: 200, useNativeDriver: true }),
+      ]).start(({ finished }) => { if (finished) setMounted(false); });
+    }
+  }, [visible]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const pan = useRef(PanResponder.create({
+    // the top of the sheet is only a handle: take the touch right away (the Annulla button still gets its taps)
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder: (_, g) => g.dy > 4 && Math.abs(g.dy) > Math.abs(g.dx),
+    onPanResponderMove: (_, g) => y.setValue(Math.max(0, g.dy)),
+    onPanResponderRelease: (_, g) => {
+      if (g.dy > Math.min(140, height.current * 0.3) || g.vy > 1.1) closeRef.current();
+      else Animated.spring(y, { toValue: 0, damping: 24, stiffness: 300, useNativeDriver: true }).start();
+    },
+    onPanResponderTerminate: () => Animated.spring(y, { toValue: 0, useNativeDriver: true }).start(),
+  })).current;
+
+  if (!mounted) return null;
+  const shown = visible ? { title, children } : last.current;
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={st.backdrop}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel={t("close")} />
-        <View style={[st.sheet, { paddingBottom: Math.max(insets.bottom, 16) + 6 }]}>
-          <View style={st.grab} />
-          <View style={st.head}>
-            <Text style={st.title}>{title}</Text>
-            <Pressable onPress={onClose} hitSlop={10} style={st.cancel} accessibilityRole="button">
-              <Text style={st.cancelTxt}>{t("cancel")}</Text>
-            </Pressable>
-          </View>
-          <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ gap: 16, paddingBottom: 4 }}>
-            {children}
-          </ScrollView>
-        </View>
-      </KeyboardAvoidingView>
+    <Modal visible transparent animationType="none" statusBarTranslucent onRequestClose={onClose}>
+      <View style={StyleSheet.absoluteFill}>
+        <Animated.View style={[StyleSheet.absoluteFill, st.scrim, { opacity: fade }]}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel={t("close")} />
+        </Animated.View>
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={st.place} pointerEvents="box-none">
+          <Animated.View onLayout={(e) => { height.current = e.nativeEvent.layout.height; }}
+            style={[st.sheet, { paddingBottom: Math.max(insets.bottom, 16) + 6, transform: [{ translateY: y }] }]}>
+            <View {...pan.panHandlers} style={st.drag}>
+              <View style={st.grab} />
+              <View style={st.head}>
+                <Text style={st.title}>{shown.title}</Text>
+                <Pressable onPress={onClose} hitSlop={10} style={st.cancel} accessibilityRole="button">
+                  <Text style={st.cancelTxt}>{t("cancel")}</Text>
+                </Pressable>
+              </View>
+            </View>
+            <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ gap: 16, paddingBottom: 4 }}>
+              {shown.children}
+            </ScrollView>
+          </Animated.View>
+        </KeyboardAvoidingView>
+      </View>
     </Modal>
   );
 }
 const sheetStyles = (C) => ({
-  backdrop: { flex: 1, justifyContent: "flex-end", backgroundColor: C.scrim },
-  sheet: { backgroundColor: C.bg, borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 20, paddingTop: 8, maxHeight: "94%", gap: 12 },
-  grab: { alignSelf: "center", width: 36, height: 4, borderRadius: 2, backgroundColor: C.line, marginBottom: 4 },
+  scrim: { backgroundColor: C.scrim },
+  place: { flex: 1, justifyContent: "flex-end" },
+  sheet: { backgroundColor: C.bg, borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 20, maxHeight: "92%", gap: 8,
+    shadowColor: "#000", shadowOpacity: 0.12, shadowRadius: 20, shadowOffset: { width: 0, height: -4 }, elevation: 16 },
+  drag: { paddingTop: 8, userSelect: "none", cursor: "grab" },
+  grab: { alignSelf: "center", width: 40, height: 5, borderRadius: 3, backgroundColor: C.muted, opacity: 0.35, marginBottom: 6 },
   head: { flexDirection: "row", alignItems: "center", minHeight: 44 },
   title: { flex: 1, color: C.fg, fontFamily: F.bold, fontSize: 20, letterSpacing: -0.4 },
   cancel: { minHeight: 44, justifyContent: "center", paddingLeft: 12 },

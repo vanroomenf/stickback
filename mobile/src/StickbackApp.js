@@ -363,6 +363,19 @@ export default function StickbackApp({ userId }) {
     try { await api.deleteAccount(); } catch { say(t("toast.deleteAccountFail")); }
   };
 
+  // The same functions on every render, so the feed doesn't redraw for nothing; they always call the latest code
+  const latest = useRef({});
+  latest.current = { act, toggleSave, openProfile, loadMore, refresh };
+  const feedFns = useMemo(() => ({
+    dispatch: (a) => latest.current.act(a),
+    onToggleSave: (sticker) => latest.current.toggleSave(sticker),
+    onUser: (u) => latest.current.openProfile(u, true),
+    onReply: (pid) => { setLastAdded(null); setSheet({ kind: "reply", pid }); },
+    onEndReached: () => latest.current.loadMore(),
+    onPage: (p) => setPageCat(p.category),
+    onRefresh: async () => { setRefreshing(true); await latest.current.refresh(); setRefreshing(false); },
+  }), []);
+
   const replyTo = sheet?.kind === "reply" ? problems.find((p) => p.id === sheet.pid) : null;
   const topInset = insets.top + TOPBAR_HEIGHT;
 
@@ -394,10 +407,9 @@ export default function StickbackApp({ userId }) {
       <View style={{ flex: 1 }}>
         <View style={[StyleSheet.absoluteFill, view !== "feed" && st.hidden]} pointerEvents={view === "feed" ? "auto" : "none"}>
           {problems.length ? (
-            <Feed key={`feed-${feedMode}-${category}-${feedLangs.join()}`} ref={feedRef} me={me} problems={problems} users={users} dispatch={act} focus={focus} topInset={topInset}
-              refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await refresh(); setRefreshing(false); }} onEndReached={loadMore} onPage={(p) => setPageCat(p.category)}
-              onReply={(pid) => { setLastAdded(null); setSheet({ kind: "reply", pid }); }}
-              onUser={(u) => openProfile(u, true)} onMore={setMore} savedSet={savedSet} onToggleSave={toggleSave} />
+            <Feed key={`feed-${feedMode}-${category}-${feedLangs.join()}`} ref={feedRef} me={me} problems={problems} users={users} focus={focus} topInset={topInset}
+              refreshing={refreshing} onRefresh={feedFns.onRefresh} onEndReached={feedFns.onEndReached} onPage={feedFns.onPage}
+              dispatch={feedFns.dispatch} onReply={feedFns.onReply} onUser={feedFns.onUser} onMore={setMore} savedSet={savedSet} onToggleSave={feedFns.onToggleSave} />
           ) : (
             <View style={[st.center, { flex: 1, paddingTop: topInset, paddingHorizontal: 32, gap: 14 }]}>
               {feedMode === "following" ? (

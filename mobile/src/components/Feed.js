@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
+import { forwardRef, memo, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { orderReplies } from "../store.js";
 import { F, useTheme } from "../theme.js";
@@ -11,7 +11,8 @@ const GAP = 10;
 const PAD = 12; // inside each reply card
 const SIDE = 20;
 
-function ProblemScreen({ me, p, first, height, width, users, dispatch, onReply, onUser, onMore, focusMid, savedSet, onToggleSave }) {
+// memo: when you swipe to the next problem, the others don't redraw
+const ProblemScreen = memo(function ProblemScreen({ me, p, first, height, width, users, dispatch, onReply, onUser, onMore, focusMid, savedSet, onToggleSave }) {
   const mine = p.author === me;
   const left = timeLeft(p.closesAt);
   const tone = useTheme().cat(p.category);
@@ -154,9 +155,9 @@ function ProblemScreen({ me, p, first, height, width, users, dispatch, onReply, 
       {first && <Text style={[st.hint, { color: tone.muted }]}>{t("feed.swipeHint")}</Text>}
     </View>
   );
-}
+});
 
-const Feed = forwardRef(function Feed({ problems, topInset, refreshing, onRefresh, onEndReached, onPage, ...rest }, ref) {
+const Feed = memo(forwardRef(function Feed({ problems, topInset, refreshing, onRefresh, onEndReached, onPage, me, users, dispatch, onReply, onUser, onMore, savedSet, onToggleSave, focus }, ref) {
   const listRef = useRef(null);
   const { cat, C } = useTheme();
   const [box, setBox] = useState({ w: 0, h: 0 });
@@ -176,6 +177,14 @@ const Feed = forwardRef(function Feed({ problems, topInset, refreshing, onRefres
     if (top) pageRef.current?.(top.item);
   }).current;
 
+  const renderItem = useCallback(({ item, index }) => (
+    <View style={{ paddingTop: topInset, backgroundColor: cat(item.category).bg }}>
+      <ProblemScreen p={item} first={index === 0} height={box.h - topInset} width={box.w}
+        me={me} users={users} dispatch={dispatch} onReply={onReply} onUser={onUser} onMore={onMore} savedSet={savedSet} onToggleSave={onToggleSave}
+        focusMid={focus && focus.pid === item.id && focus.mid ? focus : null} />
+    </View>
+  ), [topInset, cat, box, me, users, dispatch, onReply, onUser, onMore, savedSet, onToggleSave, focus]);
+
   return (
     <View style={{ flex: 1, backgroundColor: problems[0] ? cat(problems[0].category).bg : C.bg }}
       onLayout={(e) => setBox({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}>
@@ -187,13 +196,12 @@ const Feed = forwardRef(function Feed({ problems, topInset, refreshing, onRefres
           pagingEnabled
           showsVerticalScrollIndicator={false}
           getItemLayout={(_, i) => ({ length: box.h, offset: box.h * i, index: i })}
-          renderItem={({ item, index }) => (
-            <View style={{ paddingTop: topInset, backgroundColor: cat(item.category).bg }}>
-              <ProblemScreen p={item} first={index === 0} height={box.h - topInset} width={box.w} {...rest}
-                focusMid={rest.focus && rest.focus.pid === item.id && rest.focus.mid ? rest.focus : null} />
-            </View>
-          )}
+          renderItem={renderItem}
           windowSize={3}
+          initialNumToRender={2}
+          maxToRenderPerBatch={2}
+          updateCellsBatchingPeriod={80}
+          removeClippedSubviews
           onEndReached={onEndReached}
           onEndReachedThreshold={2}
           onViewableItemsChanged={onViewable}
@@ -203,7 +211,7 @@ const Feed = forwardRef(function Feed({ problems, topInset, refreshing, onRefres
       )}
     </View>
   );
-});
+}));
 
 export default Feed;
 
