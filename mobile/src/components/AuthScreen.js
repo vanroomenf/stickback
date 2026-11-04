@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { supabase } from "../lib/supabase.js";
@@ -43,8 +43,20 @@ export default function AuthScreen() {
   const signup = mode === "signup";
   const cleanUser = username.trim().toLowerCase();
   const userOk = !signup || USERNAME.test(cleanUser);
+  // Is the username free? Asked while you type (null = don't know yet)
+  const [free, setFree] = useState(null);
+  useEffect(() => {
+    setFree(null);
+    if (!signup || !USERNAME.test(cleanUser)) return;
+    let live = true;
+    const tm = setTimeout(async () => {
+      const { data, error } = await supabase.rpc("username_available", { wanted: cleanUser });
+      if (live && !error) setFree(!!data);
+    }, 350);
+    return () => { live = false; clearTimeout(tm); };
+  }, [cleanUser, signup]);
   const age = ageFrom(birth);
-  const canSend = email.includes("@") && password.length >= 6 && userOk && !busy && (!signup || (age !== null && rules));
+  const canSend = email.includes("@") && password.length >= 6 && userOk && free !== false && !busy && (!signup || (age !== null && rules));
 
   // Forgotten password: a code by email, then the new password, all inside the app
   const sendCode = async () => {
@@ -117,6 +129,9 @@ export default function AuthScreen() {
     try {
       if (signup) {
         if (age < MIN_AGE) { setTooYoung(true); return; }
+        // last check right before creating the account
+        const { data: ok, error: checkError } = await supabase.rpc("username_available", { wanted: cleanUser });
+        if (!checkError && ok === false) { setFree(false); return; }
         const { data, error } = await supabase.auth.signUp({
           email: email.trim(),
           password,
@@ -161,8 +176,8 @@ export default function AuthScreen() {
             <Text style={st.lab}>{t("auth.username")}</Text>
             <TextInput value={username} onChangeText={setUsername} autoCapitalize="none" autoCorrect={false} maxLength={20}
               placeholder={t("auth.usernamePh")} placeholderTextColor={C.muted} style={st.input} textContentType="username" />
-            <Text style={[st.hint, username && !userOk && { color: C.danger }]}>
-              {t("auth.usernameHint")}
+            <Text style={[st.hint, ((username && !userOk) || free === false) && { color: C.danger }]}>
+              {free === false ? t("auth.usernameTaken") : free === true ? t("auth.usernameFree") : t("auth.usernameHint")}
             </Text>
           </View>
         )}
