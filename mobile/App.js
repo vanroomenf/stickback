@@ -3,23 +3,30 @@ import { StatusBar } from "expo-status-bar";
 import { ActivityIndicator, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useFonts } from "expo-font";
-import { BricolageGrotesque_600SemiBold, BricolageGrotesque_800ExtraBold } from "@expo-google-fonts/bricolage-grotesque";
-import { Figtree_400Regular, Figtree_500Medium, Figtree_600SemiBold, Figtree_700Bold } from "@expo-google-fonts/figtree";
+import { Onest_400Regular, Onest_500Medium, Onest_600SemiBold, Onest_700Bold, Onest_800ExtraBold } from "@expo-google-fonts/onest";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase } from "./src/lib/supabase.js";
 import AuthScreen from "./src/components/AuthScreen.js";
-import StickbackApp from "./src/StickbackApp.js";
-import { C } from "./src/theme.js";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { loadLanguage, onLanguageChange } from "./src/i18n/index.js";
 import Intro from "./src/components/Intro.js";
+import StickbackApp from "./src/StickbackApp.js";
+import { ThemeProvider, useTheme } from "./src/theme.js";
+import { loadLanguage, onLanguageChange } from "./src/i18n/index.js";
 
 const INTRO_KEY = "stickback.introSeen";
 
 export default function App() {
-  const [fontsReady, fontError] = useFonts({
-    BricolageGrotesque_600SemiBold, BricolageGrotesque_800ExtraBold,
-    Figtree_400Regular, Figtree_500Medium, Figtree_600SemiBold, Figtree_700Bold,
-  });
+  return (
+    <SafeAreaProvider>
+      <ThemeProvider>
+        <Root />
+      </ThemeProvider>
+    </SafeAreaProvider>
+  );
+}
+
+function Root() {
+  const { C } = useTheme();
+  const [fontsReady, fontError] = useFonts({ Onest_400Regular, Onest_500Medium, Onest_600SemiBold, Onest_700Bold, Onest_800ExtraBold });
   const [session, setSession] = useState(undefined); // undefined = still checking
   const [langReady, setLangReady] = useState(false);
   const [introSeen, setIntroSeen] = useState(null); // null = still checking
@@ -41,11 +48,11 @@ export default function App() {
   const finishIntro = () => { setIntroSeen(true); AsyncStorage.setItem(INTRO_KEY, "1").catch(() => {}); };
 
   return (
-    <SafeAreaProvider>
-      <StatusBar style="light" />
+    <>
+      <StatusBar style={C.dark ? "light" : "dark"} />
       {!ready ? (
         <View style={{ flex: 1, backgroundColor: C.bg, alignItems: "center", justifyContent: "center" }}>
-          <ActivityIndicator color={C.accent} />
+          <ActivityIndicator color={C.muted} />
         </View>
       ) : !introSeen ? (
         <Intro key={langKey} onDone={finishIntro} />
@@ -54,6 +61,6 @@ export default function App() {
       ) : (
         <AuthScreen key={langKey} />
       )}
-    </SafeAreaProvider>
+    </>
   );
 }

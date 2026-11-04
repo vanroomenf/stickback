@@ -1,14 +1,17 @@
 // Three quick screens the first time you open Stickback: post, reply with stickers, give stars
 import { useRef, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { Pressable, ScrollView, Text, useWindowDimensions, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { exampleStickers } from "../data.js";
 import { t } from "../i18n/index.js";
-import { C, F } from "../theme.js";
-import { Primary, StarButton, StickerCard } from "./ui.js";
+import { F, useStyles, useTheme } from "../theme.js";
+import { Logo, Primary, StarButton, StickerCard } from "./ui.js";
 
 export default function Intro({ onDone }) {
   const insets = useSafeAreaInsets();
+  const { C, cat } = useTheme();
+  const st = useStyles(makeStyles);
+  const tones = [cat("scuola"), cat("famiglia"), cat("amici")];
   const { width, height } = useWindowDimensions();
   const pager = useRef(null);
   const [page, setPage] = useState(0);
@@ -21,21 +24,23 @@ export default function Intro({ onDone }) {
       title: t("intro.1.title"), body: t("intro.1.body"),
       art: (
         <View style={[st.problem, { width: visual }]}>
-          <Text style={st.handle}>@giulia · 2 h</Text>
-          <Text style={st.ptext}>{t("intro.1.example")}</Text>
+          <Text style={[st.handle, { color: tones[0].muted }]}>giulia · 2 h</Text>
+          <Text style={[st.ptext, { color: tones[0].fg }]}>{t("intro.1.example")}</Text>
         </View>
       ),
     },
     {
       title: t("intro.2.title"), body: t("intro.2.body"),
-      art: <StickerCard meme={{ id: 3, caption: t("intro.2.caption"), sticker }} size={visual * 0.82} />,
+      art: <StickerCard meme={{ id: 3, caption: t("intro.2.caption"), sticker }} size={visual * 0.7} ink={tones[1].fg} />,
     },
     {
       title: t("intro.3.title"), body: t("intro.3.body"),
       art: (
         <View style={{ flexDirection: "row", gap: 16, alignItems: "center" }}>
-          <StarButton big on={stars.p} count={stars.p ? 129 : 128} label={t("feed.likeProblem")} onToggle={() => setStars((s) => ({ ...s, p: !s.p }))} />
-          <StarButton on={stars.r} count={stars.r ? 42 : 41} label={t("feed.likeReply")} onToggle={() => setStars((s) => ({ ...s, r: !s.r }))} />
+          <StarButton on={stars.p} count={stars.p ? 129 : 128} label={t("feed.likeProblem")} color={tones[2].fg} size={44} textSize={28}
+            onToggle={() => setStars((s) => ({ ...s, p: !s.p }))} />
+          <StarButton on={stars.r} count={stars.r ? 42 : 41} label={t("feed.likeReply")} color={tones[2].fg} size={44} textSize={28}
+            onToggle={() => setStars((s) => ({ ...s, r: !s.r }))} />
         </View>
       ),
     },
@@ -46,7 +51,7 @@ export default function Intro({ onDone }) {
   return (
     <View style={[st.wrap, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 20 }]}>
       <View style={st.top}>
-        <Text style={st.logo}>Stick<Text style={{ color: C.accent }}>back</Text></Text>
+        <Logo color={C.fg} size={22} />
         {!last && <Pressable onPress={onDone} hitSlop={10}><Text style={st.skip}>{t("intro.skip")}</Text></Pressable>}
       </View>
 
@@ -54,7 +59,7 @@ export default function Intro({ onDone }) {
         onMomentumScrollEnd={(e) => setPage(Math.round(e.nativeEvent.contentOffset.x / width))} scrollEventThrottle={16}>
         {slides.map((s, i) => (
           <View key={i} style={[st.slide, { width }]}>
-            <View style={[st.art, { height: visual + 20 }]}>{s.art}</View>
+            <View style={[st.art, { height: visual + 40, backgroundColor: tones[i].bg }]}>{s.art}</View>
             <Text style={st.step}>{i + 1} / {slides.length}</Text>
             <Text style={st.title}>{s.title}</Text>
             <Text style={st.body}>{s.body}</Text>
@@ -72,21 +77,20 @@ export default function Intro({ onDone }) {
   );
 }
 
-const st = StyleSheet.create({
+const makeStyles = (C) => ({
   wrap: { flex: 1, backgroundColor: C.bg },
-  top: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 24, minHeight: 36 },
-  logo: { color: C.fg, fontFamily: F.display, fontSize: 22, letterSpacing: -0.5 },
-  skip: { color: C.muted, fontFamily: F.semi, fontSize: 15 },
-  slide: { paddingHorizontal: 32, justifyContent: "center", gap: 12 },
-  art: { alignItems: "center", justifyContent: "center", marginBottom: 16 },
-  step: { color: C.accent, fontFamily: F.bold, fontSize: 13, letterSpacing: 0.8 },
-  title: { color: C.fg, fontFamily: F.display, fontSize: 30, lineHeight: 34, letterSpacing: -0.6 },
-  body: { color: C.muted, fontFamily: F.body, fontSize: 16, lineHeight: 23 },
-  problem: { backgroundColor: C.surface, borderWidth: 1, borderColor: C.line, borderRadius: 18, padding: 18, gap: 10, transform: [{ rotate: "-2deg" }] },
-  handle: { color: C.muted, fontFamily: F.semi, fontSize: 13 },
-  ptext: { color: C.fg, fontFamily: F.display, fontSize: 21, lineHeight: 25 },
+  top: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 24, minHeight: 44 },
+  skip: { color: C.muted, fontFamily: F.medium, fontSize: 15, padding: 10 },
+  slide: { paddingHorizontal: 24, justifyContent: "center", gap: 10 },
+  art: { alignItems: "center", justifyContent: "center", marginBottom: 22, borderRadius: 28, overflow: "hidden" },
+  step: { color: C.muted, fontFamily: F.semi, fontSize: 13, letterSpacing: 0.6 },
+  title: { color: C.fg, fontFamily: F.bold, fontSize: 30, lineHeight: 35, letterSpacing: -0.8 },
+  body: { color: C.muted, fontFamily: F.body, fontSize: 17, lineHeight: 24 },
+  problem: { gap: 10, paddingHorizontal: 8 },
+  handle: { fontFamily: F.medium, fontSize: 14 },
+  ptext: { fontFamily: F.bold, fontSize: 24, lineHeight: 29, letterSpacing: -0.5 },
   bottom: { paddingHorizontal: 24, gap: 18 },
   dots: { flexDirection: "row", gap: 7, justifyContent: "center" },
   dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: C.line },
-  dotOn: { width: 22, backgroundColor: C.accent },
+  dotOn: { width: 22, backgroundColor: C.fg },
 });

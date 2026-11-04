@@ -6,11 +6,11 @@ import * as api from "./lib/api.js";
 import { supabase } from "./lib/supabase.js";
 import { pasteSticker, pickStickers } from "./lib/stickers.js";
 import { nextId } from "./lib/util.js";
-import { C, F } from "./theme.js";
+import { F, useStyles, useTheme } from "./theme.js";
 import Feed from "./components/Feed.js";
 import Profile from "./components/Profile.js";
 import { EditProfileSheet, ProblemSheet, ReplySheet } from "./components/Sheets.js";
-import { Avatar, HomeIcon, Toast } from "./components/ui.js";
+import { Avatar, HomeIcon, PlusIcon, Primary, Toast } from "./components/ui.js";
 import { ConfirmSheet, MoreSheet, ReportSheet, SettingsSheet, TermsGate } from "./components/Safety.js";
 import { FeedHeader, TOPBAR_HEIGHT } from "./components/Social.js";
 import { feedLanguages, lang, setFeedLanguages, t, tn } from "./i18n/index.js";
@@ -20,6 +20,9 @@ import { getPushToken, onNotificationOpen, pushPermission } from "./lib/push.js"
 
 export default function StickbackApp({ userId }) {
   const insets = useSafeAreaInsets();
+  const { C, cat } = useTheme();
+  const st = useStyles(makeStyles);
+  const [pageCat, setPageCat] = useState(null); // category of the problem on screen: the header takes its colour
   const [state, dispatch] = useReducer(reducer, null, initialState);
   const { problems, users, myStickers, loaded } = state;
 
@@ -375,10 +378,10 @@ export default function StickbackApp({ userId }) {
         {loadError ? (
           <View style={{ alignItems: "center", gap: 14, padding: 24 }}>
             <Text style={st.centerTxt}>{t("app.unreachable")}</Text>
-            <Pressable style={st.retry} onPress={() => { setLoadError(false); refresh(); }}><Text style={st.retryTxt}>{t("retry")}</Text></Pressable>
+            <Primary label={t("retry")} onPress={() => { setLoadError(false); refresh(); }} />
             <Pressable onPress={signOut}><Text style={st.link}>{t("signOut")}</Text></Pressable>
           </View>
-        ) : <ActivityIndicator color={C.accent} />}
+        ) : <ActivityIndicator color={C.muted} />}
       </View>
     );
   }
@@ -389,7 +392,7 @@ export default function StickbackApp({ userId }) {
         <View style={[StyleSheet.absoluteFill, view !== "feed" && st.hidden]} pointerEvents={view === "feed" ? "auto" : "none"}>
           {problems.length ? (
             <Feed key={`feed-${category}-${feedLangs.join()}`} ref={feedRef} me={me} problems={problems} users={users} dispatch={act} focus={focus} topInset={topInset}
-              refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await refresh(); setRefreshing(false); }} onEndReached={loadMore}
+              refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await refresh(); setRefreshing(false); }} onEndReached={loadMore} onPage={(p) => setPageCat(p.category)}
               onReply={(pid) => { setLastAdded(null); setSheet({ kind: "reply", pid }); }}
               onUser={(u) => openProfile(u, true)} onMore={setMore} savedSet={savedSet} onToggleSave={toggleSave} />
           ) : (
@@ -398,18 +401,19 @@ export default function StickbackApp({ userId }) {
                 <>
                   <Text style={st.emptyTitle}>{t("app.emptyCatTitle")}</Text>
                   <Text style={st.centerTxt}>{t("app.emptyCatBody")}</Text>
-                  <Pressable style={st.retry} onPress={() => setSheet({ kind: "problem" })}><Text style={st.retryTxt}>{t("app.tellOne")}</Text></Pressable>
+                  <Primary label={t("app.tellOne")} onPress={() => setSheet({ kind: "problem" })} />
                 </>
               ) : (
                 <>
                   <Text style={st.emptyTitle}>{t("app.emptyTitle")}</Text>
                   <Text style={st.centerTxt}>{t("app.emptyBody")}</Text>
-                  <Pressable style={st.retry} onPress={() => setSheet({ kind: "problem" })}><Text style={st.retryTxt}>{t("app.tellFirst")}</Text></Pressable>
+                  <Primary label={t("app.tellFirst")} onPress={() => setSheet({ kind: "problem" })} />
                 </>
               )}
             </View>
           )}
-          <FeedHeader topInset={insets.top} category={category} onCategory={setCategory} />
+          <FeedHeader topInset={insets.top} category={category} onCategory={setCategory}
+            tone={problems.length ? cat(pageCat ?? problems[0].category) : { bg: C.bg, fg: C.fg, muted: C.muted, line: C.line }} />
         </View>
         {view === "profile" && profileUser && (
           <View style={StyleSheet.absoluteFill}>
@@ -422,18 +426,20 @@ export default function StickbackApp({ userId }) {
         )}
       </View>
 
-      <View style={[st.tabbar, { paddingBottom: Math.max(insets.bottom, 10) }]}>
-        <Pressable style={st.tab} onPress={() => setView("feed")} accessibilityRole="tab" accessibilityState={{ selected: view === "feed" }}>
-          <HomeIcon color={view === "feed" ? C.fg : C.muted} />
-          <Text style={[st.tabTxt, view === "feed" && { color: C.fg }]}>{t("tab.home")}</Text>
+      <View style={[st.tabbar, { paddingBottom: Math.max(insets.bottom, 8) }]}>
+        <Pressable style={st.tab} onPress={() => setView("feed")} accessibilityRole="tab" accessibilityLabel={t("tab.home")}
+          accessibilityState={{ selected: view === "feed" }}>
+          <HomeIcon color={C.fg} filled={view === "feed"} />
         </Pressable>
-        <Pressable style={({ pressed }) => [st.plus, pressed && { opacity: 0.85 }]} onPress={() => setSheet({ kind: "problem" })} accessibilityLabel={t("tab.new")}>
-          <Text style={st.plusTxt}>+</Text>
+        <Pressable style={({ pressed }) => [st.plus, pressed && { opacity: 0.8 }]} onPress={() => setSheet({ kind: "problem" })}
+          accessibilityRole="button" accessibilityLabel={t("tab.new")}>
+          <PlusIcon color={C.onAccent} size={21} weight={2.4} />
         </Pressable>
-        <Pressable style={st.tab} onPress={() => openProfile(me, false)} accessibilityRole="tab"
+        <Pressable style={st.tab} onPress={() => openProfile(me, false)} accessibilityRole="tab" accessibilityLabel={t("tab.profile")}
           accessibilityState={{ selected: view === "profile" && profileUser === me }}>
-          <View style={view === "profile" && profileUser === me ? st.avOn : null}><Avatar users={users} user={me} size={24} /></View>
-          <Text style={[st.tabTxt, view === "profile" && profileUser === me && { color: C.fg }]}>{t("tab.profile")}</Text>
+          <View style={[st.avRing, view === "profile" && profileUser === me && { borderColor: C.fg }]}>
+            <Avatar users={users} user={me} size={28} />
+          </View>
         </Pressable>
       </View>
 
@@ -462,21 +468,15 @@ export default function StickbackApp({ userId }) {
   );
 }
 
-const st = StyleSheet.create({
+const makeStyles = (C) => ({
   app: { flex: 1, backgroundColor: C.bg },
   center: { alignItems: "center", justifyContent: "center" },
-  centerTxt: { color: C.muted, fontFamily: F.medium, fontSize: 15, lineHeight: 21, textAlign: "center" },
-  emptyTitle: { color: C.fg, fontFamily: F.display, fontSize: 24, textAlign: "center" },
-  retry: { backgroundColor: C.accent, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 18 },
-  retryTxt: { color: C.accentInk, fontFamily: F.bold, fontSize: 15 },
-  link: { color: C.muted, fontFamily: F.semi, fontSize: 14, textDecorationLine: "underline" },
+  centerTxt: { color: C.muted, fontFamily: F.body, fontSize: 15, lineHeight: 22, textAlign: "center" },
+  emptyTitle: { color: C.fg, fontFamily: F.bold, fontSize: 24, letterSpacing: -0.5, textAlign: "center" },
+  link: { color: C.muted, fontFamily: F.medium, fontSize: 15, textDecorationLine: "underline", padding: 10 },
   hidden: { opacity: 0 },
-  topbar: { position: "absolute", top: 0, left: 0, right: 0, flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 16, paddingBottom: 10, backgroundColor: C.bg },
-  logo: { color: C.fg, fontFamily: F.display, fontSize: 21, letterSpacing: -0.4 },
-  tabbar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderTopWidth: 1, borderColor: C.line, backgroundColor: C.bg, paddingTop: 8, paddingHorizontal: 36 },
-  tab: { alignItems: "center", gap: 3, minWidth: 60 },
-  tabTxt: { color: C.muted, fontFamily: F.semi, fontSize: 11 },
-  avOn: { borderRadius: 14, borderWidth: 2, borderColor: C.accent },
-  plus: { width: 54, height: 40, borderRadius: 14, backgroundColor: C.accent, alignItems: "center", justifyContent: "center" },
-  plusTxt: { color: C.accentInk, fontSize: 26, fontFamily: F.bold, lineHeight: 30 },
+  tabbar: { flexDirection: "row", alignItems: "center", justifyContent: "space-around", borderTopWidth: StyleSheet.hairlineWidth, borderColor: C.line, backgroundColor: C.bg, paddingTop: 8 },
+  tab: { width: 60, height: 46, alignItems: "center", justifyContent: "center" },
+  avRing: { borderRadius: 18, borderWidth: 1.5, borderColor: "transparent", padding: 2 },
+  plus: { width: 54, height: 40, borderRadius: 12, backgroundColor: C.accent, alignItems: "center", justifyContent: "center" },
 });

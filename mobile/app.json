@@ -6,7 +6,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "dark",
+    "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": false,
       "infoPlist": {
@@ -19,7 +19,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#1a1622",
+        "backgroundColor": "#F0441F",
         "foregroundImage": "./assets/android-icon-foreground.png"
       },
       "package": "app.stickback",
@@ -45,7 +45,7 @@
       "expo-notifications"
     ],
     "scheme": "stickback",
-    "backgroundColor": "#1a1622",
+    "backgroundColor": "#FFF8F2",
     "experiments": {
       "baseUrl": "/stickback/app"
     },

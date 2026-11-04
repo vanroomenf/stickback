@@ -3,116 +3,181 @@ import {
   Animated, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View,
 } from "react-native";
 import { Image } from "expo-image";
-import { t } from "../i18n/index.js";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Svg, { Path } from "react-native-svg";
-import { C, F } from "../theme.js";
-import { fmt, hue, initialOf, rot } from "../lib/util.js";
+import Svg, { Circle, Path } from "react-native-svg";
+import { t } from "../i18n/index.js";
+import { F, useStyles, useTheme } from "../theme.js";
+import { fmt, initialOf } from "../lib/util.js";
 
-const STAR = "M12 2.8l2.8 5.8 6.3.9-4.6 4.4 1.1 6.3L12 17.2l-5.6 3 1.1-6.3-4.6-4.4 6.3-.9z";
+// ───────── Icons (stroke 1.8, 24 grid) ─────────
+const STAR = "M12 3.5l2.6 5.3 5.8.8-4.2 4.1 1 5.8L12 16.8l-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z";
 
-export function StarIcon({ filled, size = 16, color }) {
+export function StarIcon({ filled, size = 20, color, fill }) {
   return (
     <Svg viewBox="0 0 24 24" width={size} height={size}>
-      <Path d={STAR} fill={filled ? color : "none"} stroke={filled ? "none" : color} strokeWidth={2} strokeLinejoin="round" />
+      <Path d={STAR} fill={filled ? fill ?? color : "none"} stroke={filled ? fill ?? color : color} strokeWidth={1.8} strokeLinejoin="round" />
     </Svg>
   );
 }
 
-export function SaveIcon({ saved, color }) {
-  const book = "M6 3h12a1 1 0 0 1 1 1v17l-7-4.5L5 21V4a1 1 0 0 1 1-1z";
-  return saved ? (
-    <Svg viewBox="0 0 24 24" width={17} height={17}>
-      <Path d={book} fill={color} />
-      <Path d="M8.6 9.6l2.3 2.3 4.5-4.6" fill="none" stroke={C.accent} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" />
-    </Svg>
-  ) : (
-    <Svg viewBox="0 0 24 24" width={17} height={17}>
-      <Path d={book} fill="none" stroke={color} strokeWidth={2} strokeLinejoin="round" />
-      <Path d="M12 7.5v6M9 10.5h6" stroke={color} strokeWidth={2} strokeLinecap="round" />
-    </Svg>
-  );
-}
-
-export function HomeIcon({ color }) {
+export function SaveIcon({ saved, color, size = 21 }) {
   return (
-    <Svg viewBox="0 0 24 24" width={24} height={24}>
-      <Path d="M4 10.5 12 4l8 6.5V20h-5.5v-6h-5v6H4z" fill={color} />
+    <Svg viewBox="0 0 24 24" width={size} height={size}>
+      <Path d="M6.5 3.5h11v17L12 16.6 6.5 20.5z" fill={saved ? color : "none"} stroke={color} strokeWidth={1.8} strokeLinejoin="round" />
     </Svg>
   );
 }
 
-export function StarButton({ on, count, label, big, onToggle }) {
+export function HomeIcon({ color, filled = true, size = 26 }) {
+  return (
+    <Svg viewBox="0 0 24 24" width={size} height={size}>
+      <Path d="M4 10.4L12 4l8 6.4V20h-5.2v-5.6H9.2V20H4z" fill={filled ? color : "none"} stroke={color} strokeWidth={filled ? 0 : 1.8} strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+export function PlusIcon({ color, size = 20, weight = 2.3 }) {
+  return (
+    <Svg viewBox="0 0 24 24" width={size} height={size}>
+      <Path d="M12 5v14M5 12h14" stroke={color} strokeWidth={weight} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+export function MoreIcon({ color, size = 20 }) {
+  return (
+    <Svg viewBox="0 0 24 24" width={size} height={size}>
+      <Circle cx={5} cy={12} r={1.8} fill={color} /><Circle cx={12} cy={12} r={1.8} fill={color} /><Circle cx={19} cy={12} r={1.8} fill={color} />
+    </Svg>
+  );
+}
+
+export function MenuIcon({ color, size = 24 }) {
+  return (
+    <Svg viewBox="0 0 24 24" width={size} height={size}>
+      <Path d="M4 7h16M4 12h16M4 17h16" stroke={color} strokeWidth={1.9} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+export function BackIcon({ color, size = 24 }) {
+  return (
+    <Svg viewBox="0 0 24 24" width={size} height={size}>
+      <Path d="M15 5l-7 7 7 7" stroke={color} strokeWidth={2} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+export function PasteIcon({ color, size = 22 }) {
+  return (
+    <Svg viewBox="0 0 24 24" width={size} height={size}>
+      <Path d="M9 4.5h6M8 4.5H6.5a1.5 1.5 0 0 0-1.5 1.5v13.5A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H16M9 3h6v3H9z" stroke={color} strokeWidth={1.8} fill="none" strokeLinejoin="round" strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+// The app's mark: a lowercase s on tomato, with the corner peeling off like a sticker
+export function AppMark({ size = 64 }) {
+  return (
+    <View style={{ width: size, height: size, borderRadius: size * 0.23, backgroundColor: "#F0441F", alignItems: "center", justifyContent: "center", overflow: "hidden" }}
+      accessibilityRole="image" accessibilityLabel="Stickback">
+      <Text style={{ color: "#FFFFFF", fontFamily: F.display, fontSize: size * 0.85, lineHeight: size * 0.95, marginTop: -size * 0.13, letterSpacing: -size * 0.03 }}>s</Text>
+      <Svg viewBox="0 0 54 54" width={size * 0.3} height={size * 0.3} style={{ position: "absolute", top: 0, right: 0 }}>
+        <Path d="M0 0h54v54z" fill="#C7300F" />
+        <Path d="M0 0l54 54H10a10 10 0 0 1-10-10z" fill="#FFE2CC" />
+      </Svg>
+    </View>
+  );
+}
+
+// The wordmark
+export function Logo({ color, size = 23 }) {
+  return <Text style={{ color, fontFamily: F.display, fontSize: size, letterSpacing: -size * 0.035 }}>stickback</Text>;
+}
+
+// ───────── Stars ─────────
+// Plain icon + number; your star turns tomato and pops
+export function StarButton({ on, count, label, onToggle, color, size = 20, textSize = 14 }) {
+  const { C } = useTheme();
   const scale = useRef(new Animated.Value(1)).current;
   const press = () => {
     if (!on) {
       scale.setValue(1);
       Animated.sequence([
-        Animated.timing(scale, { toValue: 1.45, duration: 140, useNativeDriver: true }),
-        Animated.spring(scale, { toValue: 1, useNativeDriver: true }),
+        Animated.timing(scale, { toValue: 1.35, duration: 130, useNativeDriver: true }),
+        Animated.spring(scale, { toValue: 1, friction: 4, useNativeDriver: true }),
       ]).start();
     }
     onToggle();
   };
-  const color = on ? C.accentInk : C.muted;
+  const ink = color ?? C.fg;
   return (
     <Pressable onPress={press} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ selected: on }}
-      hitSlop={6} style={[s.star, big && s.starBig, on && s.starOn]}>
+      hitSlop={6} style={({ pressed }) => [s.star, pressed && { opacity: 0.6 }]}>
       <Animated.View style={{ transform: [{ scale }] }}>
-        <StarIcon filled={on} size={big ? 22 : 16} color={color} />
+        <StarIcon filled={on} size={size} color={ink} fill={C.accent} />
       </Animated.View>
-      <Text style={[s.starNum, big && s.starNumBig, on && { color: C.accentInk }]}>{fmt(count)}</Text>
+      <Text style={[s.starNum, { color: ink, fontSize: textSize }]}>{fmt(count)}</Text>
     </Pressable>
   );
 }
 
-export function Avatar({ users, user, size = 26 }) {
+// ───────── People ─────────
+export function Avatar({ users, user, size = 30, tone }) {
+  const { person } = useTheme();
+  const { bg, fg } = tone ?? person(user);
   return (
-    <View style={[s.avatar, { width: size, height: size, borderRadius: size / 2, backgroundColor: `hsl(${hue(user)}, 55%, 45%)` }]}>
-      <Text style={[s.avatarTxt, { fontSize: size * 0.45 }]}>{initialOf(users, user)}</Text>
+    <View style={[s.avatar, { width: size, height: size, borderRadius: size / 2, backgroundColor: bg }]}>
+      <Text style={{ color: fg, fontFamily: F.bold, fontSize: size * 0.44 }}>{initialOf(users, user)}</Text>
     </View>
   );
 }
 
+// ───────── Stickers ─────────
 // Sticker or GIF image; GIFs and animated WebP play automatically
 export function StickerImage({ sticker, style, thumb }) {
   return (
     <Image source={{ uri: thumb ? sticker.thumb || sticker.v : sticker.v }} style={style}
-      contentFit={sticker.type === "gif" && !thumb ? "contain" : "contain"} transition={120} autoplay />
+      contentFit="contain" transition={120} autoplay />
   );
 }
 
-// A reply: your text on top, the sticker or GIF below, kept separate
-export function StickerCard({ meme, size, placeholder, compact }) {
+// A reply: your text on top, the sticker or GIF below, never mixed.
+// compact = just the image, for thumbnails.
+export function StickerCard({ meme, size, placeholder, compact, ink, muted }) {
+  const { C } = useTheme();
   const gif = meme.sticker.type === "gif";
-  const pad = compact ? 0 : size * 0.06;
+  const box = (
+    <View style={[{ width: size, height: size }, gif && { backgroundColor: C.gifBg, borderRadius: compact ? 6 : 16, overflow: "hidden" }]}>
+      <StickerImage sticker={meme.sticker} thumb={compact} style={{ width: "100%", height: "100%" }} />
+    </View>
+  );
+  if (compact) return box;
   return (
-    <View style={[s.card, { width: size, height: size, borderRadius: compact ? 8 : 16 }]}>
-      {!compact && (
-        <Text numberOfLines={3} style={[s.caption, { fontSize: Math.max(11, size * 0.066), paddingHorizontal: pad, paddingTop: pad },
-          placeholder && { color: C.muted }]}>{meme.caption}</Text>
-      )}
-      <View style={[s.stk, gif ? { backgroundColor: C.gifBg, marginTop: compact ? 0 : size * 0.03 } : { padding: pad, paddingTop: compact ? 0 : size * 0.02 }]}>
-        <StickerImage sticker={meme.sticker} thumb={compact}
-          style={[{ width: "100%", height: "100%" }, !gif && !compact && { transform: [{ rotate: rot(meme.id) }] }]} />
-      </View>
+    <View style={{ width: size, gap: 10 }}>
+      <Text numberOfLines={3} style={[s.caption, { color: placeholder ? muted ?? C.muted : ink ?? C.fg }]}>{meme.caption}</Text>
+      {box}
     </View>
   );
 }
 
-// Bottom sheet used for replying, posting and editing the profile
+// ───────── Sheets, toasts, buttons ─────────
 export function Sheet({ visible, title, onClose, children }) {
   const insets = useSafeAreaInsets();
+  const st = useStyles(sheetStyles);
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={s.backdrop}>
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={st.backdrop}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel={t("close")} />
-        <View style={[s.sheet, { paddingBottom: Math.max(insets.bottom, 16) + 6 }]}>
-          <View style={s.sheetHead}>
-            <Text style={s.sheetTitle}>{title}</Text>
-            <Pressable onPress={onClose} hitSlop={10}><Text style={s.ghost}>{t("cancel")}</Text></Pressable>
+        <View style={[st.sheet, { paddingBottom: Math.max(insets.bottom, 16) + 6 }]}>
+          <View style={st.grab} />
+          <View style={st.head}>
+            <Text style={st.title}>{title}</Text>
+            <Pressable onPress={onClose} hitSlop={10} style={st.cancel} accessibilityRole="button">
+              <Text style={st.cancelTxt}>{t("cancel")}</Text>
+            </Pressable>
           </View>
-          <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ gap: 14, paddingBottom: 4 }}>
+          <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ gap: 16, paddingBottom: 4 }}>
             {children}
           </ScrollView>
         </View>
@@ -120,52 +185,68 @@ export function Sheet({ visible, title, onClose, children }) {
     </Modal>
   );
 }
+const sheetStyles = (C) => ({
+  backdrop: { flex: 1, justifyContent: "flex-end", backgroundColor: C.scrim },
+  sheet: { backgroundColor: C.bg, borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 20, paddingTop: 8, maxHeight: "94%", gap: 12 },
+  grab: { alignSelf: "center", width: 36, height: 4, borderRadius: 2, backgroundColor: C.line, marginBottom: 4 },
+  head: { flexDirection: "row", alignItems: "center", minHeight: 44 },
+  title: { flex: 1, color: C.fg, fontFamily: F.bold, fontSize: 20, letterSpacing: -0.4 },
+  cancel: { minHeight: 44, justifyContent: "center", paddingLeft: 12 },
+  cancelTxt: { color: C.muted, fontFamily: F.medium, fontSize: 15 },
+});
 
 export function Toast({ toast }) {
   const insets = useSafeAreaInsets();
+  const { C } = useTheme();
   const opacity = useRef(new Animated.Value(0)).current;
   const [msg, setMsg] = useState("");
   useEffect(() => {
     if (!toast) return;
     setMsg(toast.msg);
     Animated.timing(opacity, { toValue: 1, duration: 180, useNativeDriver: true }).start();
-    const t = setTimeout(() => Animated.timing(opacity, { toValue: 0, duration: 250, useNativeDriver: true }).start(), 2300);
-    return () => clearTimeout(t);
+    const tm = setTimeout(() => Animated.timing(opacity, { toValue: 0, duration: 250, useNativeDriver: true }).start(), 2300);
+    return () => clearTimeout(tm);
   }, [toast, opacity]);
   return (
-    <Animated.View pointerEvents="none" style={[s.toast, { top: insets.top + 56, opacity }]}>
-      <Text style={s.toastTxt} numberOfLines={1}>{msg}</Text>
+    <Animated.View pointerEvents="none" style={[s.toast, { top: insets.top + 60, opacity, backgroundColor: C.fg }]}>
+      <Text style={[s.toastTxt, { color: C.bg }]} numberOfLines={2}>{msg}</Text>
     </Animated.View>
   );
 }
 
-export function Primary({ label, onPress, disabled }) {
+// The main button: an ink pill. tone = { bg, fg } to match a coloured page.
+export function Primary({ label, onPress, disabled, tone, danger, style }) {
+  const { C } = useTheme();
+  const bg = danger ? C.danger : tone?.bg ?? C.fg;
+  const fg = danger ? (C.dark ? "#1A0B05" : "#FFFFFF") : tone?.fg ?? C.bg;
   return (
-    <Pressable onPress={onPress} disabled={disabled} accessibilityRole="button"
-      style={({ pressed }) => [s.primary, disabled && { opacity: 0.4 }, pressed && { opacity: 0.85 }]}>
-      <Text style={s.primaryTxt}>{label}</Text>
+    <Pressable onPress={onPress} disabled={disabled} accessibilityRole="button" accessibilityState={{ disabled: !!disabled }}
+      style={({ pressed }) => [s.primary, { backgroundColor: bg }, disabled && { opacity: 0.35 }, pressed && { opacity: 0.8 }, style]}>
+      <Text style={[s.primaryTxt, { color: fg }]}>{label}</Text>
     </Pressable>
   );
 }
 
-export const s = StyleSheet.create({
-  star: { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: C.surface, borderWidth: 1, borderColor: C.line, borderRadius: 99, paddingVertical: 5, paddingHorizontal: 11 },
-  starBig: { flexDirection: "column", gap: 1, paddingVertical: 8, paddingHorizontal: 10, borderRadius: 14, minWidth: 54 },
-  starOn: { backgroundColor: C.accent, borderColor: C.accent },
-  starNum: { color: C.fg, fontFamily: F.bold, fontSize: 14 },
-  starNumBig: { fontSize: 12 },
+// A quiet button on the raised colour
+export function Secondary({ label, onPress, style }) {
+  const { C } = useTheme();
+  return (
+    <Pressable onPress={onPress} accessibilityRole="button"
+      style={({ pressed }) => [s.secondary, { backgroundColor: C.raised }, pressed && { opacity: 0.7 }, style]}>
+      <Text style={[s.secondaryTxt, { color: C.fg }]}>{label}</Text>
+    </Pressable>
+  );
+}
+
+const s = StyleSheet.create({
+  star: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 44, paddingHorizontal: 4 },
+  starNum: { fontFamily: F.semi },
   avatar: { alignItems: "center", justifyContent: "center" },
-  avatarTxt: { color: "#fff", fontFamily: F.bold },
-  card: { backgroundColor: C.surface, borderWidth: 1, borderColor: C.line, overflow: "hidden" },
-  caption: { color: C.fg, fontFamily: F.semi, lineHeight: undefined },
-  stk: { flex: 1 },
-  backdrop: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(8,6,12,0.6)" },
-  sheet: { backgroundColor: C.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, borderTopWidth: 1, borderColor: C.line, paddingHorizontal: 20, paddingTop: 18, maxHeight: "94%", gap: 14 },
-  sheetHead: { flexDirection: "row", alignItems: "center" },
-  sheetTitle: { flex: 1, color: C.fg, fontFamily: F.display, fontSize: 20 },
-  ghost: { color: C.muted, fontFamily: F.medium, fontSize: 14 },
-  toast: { position: "absolute", alignSelf: "center", backgroundColor: C.fg, borderRadius: 99, paddingVertical: 9, paddingHorizontal: 14, maxWidth: "90%", zIndex: 50 },
-  toastTxt: { color: C.bg, fontFamily: F.semi, fontSize: 13 },
-  primary: { backgroundColor: C.accent, borderRadius: 14, paddingVertical: 14, alignItems: "center" },
-  primaryTxt: { color: C.accentInk, fontFamily: F.bold, fontSize: 15 },
+  caption: { fontFamily: F.semi, fontSize: 18, lineHeight: 23, letterSpacing: -0.2 },
+  toast: { position: "absolute", alignSelf: "center", borderRadius: 999, paddingVertical: 10, paddingHorizontal: 16, maxWidth: "88%", zIndex: 50 },
+  toastTxt: { fontFamily: F.semi, fontSize: 14, textAlign: "center" },
+  primary: { borderRadius: 999, minHeight: 50, paddingHorizontal: 24, alignItems: "center", justifyContent: "center" },
+  primaryTxt: { fontFamily: F.semi, fontSize: 16 },
+  secondary: { borderRadius: 12, minHeight: 42, paddingHorizontal: 16, alignItems: "center", justifyContent: "center" },
+  secondaryTxt: { fontFamily: F.semi, fontSize: 14 },
 });

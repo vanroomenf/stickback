@@ -1,17 +1,19 @@
 // Reporting, blocking, settings and the age / rules check
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Linking, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { reportReasons } from "../lib/api.js";
 import { MIN_AGE, ageFrom } from "../lib/util.js";
 import { LANGUAGES, chosenLanguage, feedLanguages, helplines, privacyUrl, rulesUrl, setLanguage, t } from "../i18n/index.js";
-import { C, F } from "../theme.js";
-import { Primary, Sheet } from "./ui.js";
+import { F, useStyles, useTheme } from "../theme.js";
+import { Logo, Primary, Sheet } from "./ui.js";
 
 const open = (url) => Linking.openURL(url).catch(() => {});
 
 // "I have read and accept the rules and the privacy policy", with the two links tappable
 export function RulesCheckbox({ checked, onToggle }) {
+  const st = useStyles(makeStyles);
+  const { C } = useTheme();
   return (
     <Pressable style={st.check} onPress={onToggle} accessibilityRole="checkbox" accessibilityState={{ checked }}>
       <View style={[st.box, checked && st.boxOn]}>{checked && <Text style={st.tick}>✓</Text>}</View>
@@ -26,6 +28,8 @@ export function RulesCheckbox({ checked, onToggle }) {
 }
 
 export function BirthDateField({ value, onChange }) {
+  const st = useStyles(makeStyles);
+  const { C } = useTheme();
   const age = ageFrom(value);
   const bad = value.length >= 8 && age === null;
   // Insert the slashes while typing: 28102008 → 28/10/2008
@@ -45,6 +49,8 @@ export function BirthDateField({ value, onChange }) {
 
 // Shown after login to accounts that haven't confirmed age and rules yet, or that were suspended
 export function TermsGate({ banned, onAccept, onSignOut }) {
+  const st = useStyles(makeStyles);
+  const { C } = useTheme();
   const insets = useSafeAreaInsets();
   const [birth, setBirth] = useState("");
   const [ok, setOk] = useState(false);
@@ -60,7 +66,7 @@ export function TermsGate({ banned, onAccept, onSignOut }) {
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: C.bg }} contentContainerStyle={[st.gate, { paddingTop: insets.top + 48, paddingBottom: insets.bottom + 24 }]}>
-      <Text style={st.logo}>Stick<Text style={{ color: C.accent }}>back</Text></Text>
+      <View style={{ marginBottom: 8 }}><Logo color={C.fg} size={30} /></View>
       {banned ? (
         <>
           <Text style={st.gateTitle}>{t("gate.bannedTitle")}</Text>
@@ -88,6 +94,8 @@ export function TermsGate({ banned, onAccept, onSignOut }) {
 
 // "⋯" menu for a problem, a reply or a person
 export function MoreSheet({ target, me, onClose, onReport, onBlock, onDelete }) {
+  const st = useStyles(makeStyles);
+  const { C } = useTheme();
   if (!target) return <Sheet visible={false} title="" onClose={onClose} />;
   const mine = target.author === me;
   const title = target.kind === "problem" ? t("more.problem") : target.kind === "reply" ? t("more.reply") : `@${target.author}`;
@@ -107,15 +115,19 @@ export function MoreSheet({ target, me, onClose, onReport, onBlock, onDelete }) 
 }
 
 function Row({ label, hint, danger, onPress }) {
+  const st = useStyles(makeStyles);
+  const { C } = useTheme();
   return (
     <Pressable style={({ pressed }) => [st.row, pressed && { opacity: 0.7 }]} onPress={onPress} accessibilityRole="button">
-      <Text style={[st.rowTxt, danger && { color: "#ff8a8a" }]}>{label}</Text>
+      <Text style={[st.rowTxt, danger && { color: C.danger }]}>{label}</Text>
       {!!hint && <Text style={st.rowHint}>{hint}</Text>}
     </Pressable>
   );
 }
 
 export function ReportSheet({ target, onClose, onSend }) {
+  const st = useStyles(makeStyles);
+  const { C } = useTheme();
   const [reason, setReason] = useState(null);
   const [details, setDetails] = useState("");
   const [busy, setBusy] = useState(false);
@@ -145,20 +157,22 @@ export function ReportSheet({ target, onClose, onSend }) {
 }
 
 export function ConfirmSheet({ visible, title, text, confirm, danger, onClose, onConfirm }) {
+  const st = useStyles(makeStyles);
+  const { C } = useTheme();
   const [busy, setBusy] = useState(false);
   const go = async () => { setBusy(true); try { await onConfirm(); } finally { setBusy(false); } };
   return (
     <Sheet visible={visible} title={title} onClose={onClose}>
       <Text style={st.body}>{text}</Text>
-      <Pressable style={[st.danger, !danger && { backgroundColor: C.accent }, busy && { opacity: 0.5 }]} onPress={go} disabled={busy}>
-        <Text style={[st.dangerTxt, !danger && { color: C.accentInk }]}>{busy ? t("wait") : confirm}</Text>
-      </Pressable>
+      <Primary label={busy ? t("wait") : confirm} danger={danger} disabled={busy} onPress={go} />
     </Sheet>
   );
 }
 
 // Local helplines for the phone's country; findahelpline.com when we don't know the country
 function HelpNumbers() {
+  const st = useStyles(makeStyles);
+  const { C } = useTheme();
   const { emergency, lines } = helplines();
   return (
     <>
@@ -180,6 +194,8 @@ function HelpNumbers() {
 }
 
 export function SettingsSheet({ visible, loadBlocked, onUnblock, onDeleteAccount, onSignOut, onClose, onFeedLanguages }) {
+  const st = useStyles(makeStyles);
+  const { C } = useTheme();
   const [feedLangs, setFeedLangs] = useState(feedLanguages);
   useEffect(() => { if (visible) setFeedLangs(feedLanguages()); }, [visible]);
   // at least one language stays on
@@ -226,7 +242,7 @@ export function SettingsSheet({ visible, loadBlocked, onUnblock, onDeleteAccount
         </View>
 
         <Text style={[st.lab, { marginTop: 8 }]}>{t("settings.blocked")}</Text>
-        {blocked === null ? <ActivityIndicator color={C.accent} /> : blocked.length ? blocked.map((b) => (
+        {blocked === null ? <ActivityIndicator color={C.muted} /> : blocked.length ? blocked.map((b) => (
           <View key={b.id} style={st.blockedRow}>
             <Text style={[st.rowTxt, { flex: 1 }]} numberOfLines={1}>@{b.username}</Text>
             <Pressable style={st.smallBtn} onPress={async () => { await onUnblock(b); setBlocked((l) => l.filter((x) => x.id !== b.id)); }}>
@@ -250,36 +266,33 @@ export function SettingsSheet({ visible, loadBlocked, onUnblock, onDeleteAccount
   );
 }
 
-const st = StyleSheet.create({
+const makeStyles = (C) => ({
   gate: { paddingHorizontal: 24, gap: 16, maxWidth: 480, width: "100%", alignSelf: "center" },
-  logo: { color: C.fg, fontFamily: F.display, fontSize: 34, letterSpacing: -1, marginBottom: 8 },
-  gateTitle: { color: C.fg, fontFamily: F.display, fontSize: 24, lineHeight: 29 },
-  body: { color: C.muted, fontFamily: F.body, fontSize: 14, lineHeight: 20 },
-  muted: { color: C.muted, fontFamily: F.medium, fontSize: 14 },
-  lab: { color: C.muted, fontFamily: F.semi, fontSize: 12, letterSpacing: 0.8 },
-  input: { backgroundColor: C.bg, borderWidth: 1, borderColor: C.line, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 12, color: C.fg, fontFamily: F.medium, fontSize: 16 },
-  errTxt: { color: "#ff8a8a", fontFamily: F.medium, fontSize: 12 },
-  check: { flexDirection: "row", gap: 12, alignItems: "flex-start" },
-  box: { width: 24, height: 24, borderRadius: 7, borderWidth: 2, borderColor: C.line, alignItems: "center", justifyContent: "center", marginTop: 1 },
-  boxOn: { backgroundColor: C.accent, borderColor: C.accent },
-  tick: { color: C.accentInk, fontFamily: F.bold, fontSize: 15, lineHeight: 18 },
-  checkTxt: { flex: 1, color: C.fg, fontFamily: F.body, fontSize: 14, lineHeight: 20 },
-  link: { color: C.accent, fontFamily: F.semi, textDecorationLine: "underline" },
-  row: { backgroundColor: C.bg, borderRadius: 12, paddingVertical: 13, paddingHorizontal: 14, gap: 3 },
+  gateTitle: { color: C.fg, fontFamily: F.bold, fontSize: 26, lineHeight: 31, letterSpacing: -0.5 },
+  body: { color: C.muted, fontFamily: F.body, fontSize: 15, lineHeight: 21 },
+  muted: { color: C.muted, fontFamily: F.medium, fontSize: 15 },
+  lab: { color: C.muted, fontFamily: F.semi, fontSize: 12, letterSpacing: 0.6 },
+  input: { backgroundColor: C.raised, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 13, color: C.fg, fontFamily: F.medium, fontSize: 16 },
+  errTxt: { color: C.danger, fontFamily: F.medium, fontSize: 13 },
+  check: { flexDirection: "row", gap: 12, alignItems: "flex-start", minHeight: 44 },
+  box: { width: 24, height: 24, borderRadius: 7, borderWidth: 1.8, borderColor: C.muted, alignItems: "center", justifyContent: "center", marginTop: 1 },
+  boxOn: { backgroundColor: C.fg, borderColor: C.fg },
+  tick: { color: C.bg, fontFamily: F.bold, fontSize: 15, lineHeight: 18 },
+  checkTxt: { flex: 1, color: C.fg, fontFamily: F.body, fontSize: 15, lineHeight: 21 },
+  link: { color: C.fg, fontFamily: F.semi, textDecorationLine: "underline" },
+  row: { backgroundColor: C.surface, borderRadius: 14, paddingVertical: 14, paddingHorizontal: 16, gap: 3, minHeight: 50, justifyContent: "center" },
   rowTxt: { color: C.fg, fontFamily: F.semi, fontSize: 15 },
-  rowHint: { color: C.muted, fontFamily: F.body, fontSize: 12.5, lineHeight: 17 },
-  reason: { borderRadius: 12, paddingVertical: 11, paddingHorizontal: 14, gap: 2, backgroundColor: C.bg, borderWidth: 2, borderColor: "transparent" },
-  reasonOn: { borderColor: C.accent },
-  help: { backgroundColor: "#3a2a12", borderRadius: 12, padding: 14, gap: 6 },
-  helpTitle: { color: C.fg, fontFamily: F.bold, fontSize: 14 },
-  helpLine: { color: C.fg, fontFamily: F.body, fontSize: 14, lineHeight: 21 },
+  rowHint: { color: C.muted, fontFamily: F.body, fontSize: 13, lineHeight: 18 },
+  reason: { borderRadius: 14, paddingVertical: 12, paddingHorizontal: 16, gap: 2, backgroundColor: C.surface, borderWidth: 2, borderColor: "transparent" },
+  reasonOn: { borderColor: C.fg },
+  help: { backgroundColor: C.raised, borderRadius: 14, padding: 16, gap: 8 },
+  helpTitle: { color: C.fg, fontFamily: F.bold, fontSize: 15 },
+  helpLine: { color: C.fg, fontFamily: F.body, fontSize: 15, lineHeight: 24 },
   langs: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  lang: { borderWidth: 1, borderColor: C.line, borderRadius: 99, paddingVertical: 7, paddingHorizontal: 13, backgroundColor: C.bg },
-  langOn: { backgroundColor: C.fg, borderColor: C.fg },
-  langTxt: { color: C.fg, fontFamily: F.semi, fontSize: 13 },
-  danger: { backgroundColor: "#c92a3a", borderRadius: 14, paddingVertical: 14, alignItems: "center" },
-  dangerTxt: { color: "#fff", fontFamily: F.bold, fontSize: 15 },
-  blockedRow: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: C.bg, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 14 },
-  smallBtn: { borderWidth: 1, borderColor: C.line, borderRadius: 99, paddingVertical: 6, paddingHorizontal: 12 },
+  lang: { borderRadius: 999, minHeight: 38, paddingHorizontal: 15, justifyContent: "center", backgroundColor: C.raised },
+  langOn: { backgroundColor: C.fg },
+  langTxt: { color: C.fg, fontFamily: F.medium, fontSize: 14 },
+  blockedRow: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: C.surface, borderRadius: 14, paddingVertical: 8, paddingHorizontal: 16 },
+  smallBtn: { borderRadius: 999, minHeight: 36, paddingHorizontal: 14, justifyContent: "center", backgroundColor: C.raised },
   smallBtnTxt: { color: C.fg, fontFamily: F.semi, fontSize: 13 },
 });

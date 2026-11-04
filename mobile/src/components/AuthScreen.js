@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { supabase } from "../lib/supabase.js";
-import { C, F } from "../theme.js";
-import { Primary } from "./ui.js";
+import { F, useStyles, useTheme } from "../theme.js";
+import { AppMark, Primary } from "./ui.js";
 import { BirthDateField, RulesCheckbox } from "./Safety.js";
 import { MIN_AGE, TERMS_VERSION, ageFrom } from "../lib/util.js";
 import { t } from "../i18n/index.js";
@@ -26,6 +26,8 @@ function explain(error) {
 
 export default function AuthScreen() {
   const insets = useSafeAreaInsets();
+  const { C } = useTheme();
+  const st = useStyles(makeStyles);
   const [mode, setMode] = useState("signup"); // "signup" | "login" | "reset"
   const [codeSent, setCodeSent] = useState(false); // reset: the email with the code has gone out
   const [code, setCode] = useState("");
@@ -75,7 +77,7 @@ export default function AuthScreen() {
     return (
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1, backgroundColor: C.bg }}>
         <ScrollView contentContainerStyle={[st.wrap, { paddingTop: insets.top + 48, paddingBottom: insets.bottom + 24 }]} keyboardShouldPersistTaps="handled">
-          <Text style={st.logo}>Stick<Text style={{ color: C.accent }}>back</Text></Text>
+          <AppMark size={56} />
           <Text style={st.title}>{t("auth.resetTitle")}</Text>
           {!codeSent && <Text style={st.tag}>{t("auth.resetBody")}</Text>}
           <View style={st.field}>
@@ -140,7 +142,10 @@ export default function AuthScreen() {
   return (
     <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1, backgroundColor: C.bg }}>
       <ScrollView contentContainerStyle={[st.wrap, { paddingTop: insets.top + 48, paddingBottom: insets.bottom + 24 }]} keyboardShouldPersistTaps="handled">
-        <Text style={st.logo}>Stick<Text style={{ color: C.accent }}>back</Text></Text>
+        <View style={{ gap: 18 }}>
+          <AppMark size={64} />
+          <Text style={st.logo}>stickback</Text>
+        </View>
         <Text style={st.tag}>{t("tagline")}</Text>
 
         <View style={st.seg}>
@@ -156,7 +161,7 @@ export default function AuthScreen() {
             <Text style={st.lab}>{t("auth.username")}</Text>
             <TextInput value={username} onChangeText={setUsername} autoCapitalize="none" autoCorrect={false} maxLength={20}
               placeholder={t("auth.usernamePh")} placeholderTextColor={C.muted} style={st.input} textContentType="username" />
-            <Text style={[st.hint, username && !userOk && { color: "#ff8a8a" }]}>
+            <Text style={[st.hint, username && !userOk && { color: C.danger }]}>
               {t("auth.usernameHint")}
             </Text>
           </View>
@@ -190,24 +195,24 @@ export default function AuthScreen() {
   );
 }
 
-const st = StyleSheet.create({
+const makeStyles = (C) => ({
   wrap: { paddingHorizontal: 24, gap: 16, maxWidth: 480, width: "100%", alignSelf: "center" },
-  logo: { color: C.fg, fontFamily: F.display, fontSize: 40, letterSpacing: -1 },
-  tag: { color: C.muted, fontFamily: F.medium, fontSize: 17, lineHeight: 23, marginBottom: 12 },
-  seg: { flexDirection: "row", gap: 4, backgroundColor: C.surface, padding: 4, borderRadius: 12 },
-  segBtn: { flex: 1, paddingVertical: 10, borderRadius: 9, alignItems: "center" },
-  segOn: { backgroundColor: C.bg, borderWidth: 1, borderColor: C.line },
+  logo: { color: C.fg, fontFamily: F.display, fontSize: 38, letterSpacing: -1.4 },
+  tag: { color: C.muted, fontFamily: F.body, fontSize: 18, lineHeight: 25, marginBottom: 10 },
+  seg: { flexDirection: "row", gap: 4, backgroundColor: C.raised, padding: 4, borderRadius: 12 },
+  segBtn: { flex: 1, minHeight: 40, borderRadius: 9, alignItems: "center", justifyContent: "center" },
+  segOn: { backgroundColor: C.surface },
   segTxt: { color: C.muted, fontFamily: F.semi, fontSize: 14 },
-  field: { gap: 6 },
-  lab: { color: C.muted, fontFamily: F.semi, fontSize: 12, letterSpacing: 0.8 },
-  input: { backgroundColor: C.surface, borderWidth: 1, borderColor: C.line, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 12, color: C.fg, fontFamily: F.medium, fontSize: 16 },
-  hint: { color: C.muted, fontFamily: F.body, fontSize: 12 },
-  msg: { fontFamily: F.medium, fontSize: 14, lineHeight: 20, borderRadius: 12, padding: 12 },
-  err: { color: "#ffd6d6", backgroundColor: "#4a1f27" },
-  info: { color: C.fg, backgroundColor: C.surface },
-  title: { color: C.fg, fontFamily: F.display, fontSize: 24 },
+  field: { gap: 7 },
+  lab: { color: C.muted, fontFamily: F.semi, fontSize: 12, letterSpacing: 0.6 },
+  input: { backgroundColor: C.raised, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 14, color: C.fg, fontFamily: F.medium, fontSize: 16 },
+  hint: { color: C.muted, fontFamily: F.body, fontSize: 13 },
+  msg: { fontFamily: F.medium, fontSize: 14, lineHeight: 20, borderRadius: 14, padding: 14 },
+  err: { color: C.danger, backgroundColor: C.raised },
+  info: { color: C.fg, backgroundColor: C.raised },
+  title: { color: C.fg, fontFamily: F.bold, fontSize: 26, letterSpacing: -0.5 },
   codeInput: { fontSize: 22, letterSpacing: 6, fontFamily: F.bold },
-  linkBtn: { alignSelf: "center", padding: 8 },
-  linkTxt: { color: C.accent, fontFamily: F.semi, fontSize: 14 },
-  linkMuted: { color: C.muted, fontFamily: F.semi, fontSize: 14 },
+  linkBtn: { alignSelf: "center", minHeight: 44, justifyContent: "center", paddingHorizontal: 10 },
+  linkTxt: { color: C.fg, fontFamily: F.semi, fontSize: 15, textDecorationLine: "underline" },
+  linkMuted: { color: C.muted, fontFamily: F.medium, fontSize: 15 },
 });

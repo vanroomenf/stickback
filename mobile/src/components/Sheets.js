@@ -1,16 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native";
+import { Pressable, ScrollView, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { searchGiphy } from "../lib/giphy.js";
 import { categories } from "../lib/api.js";
 import { t } from "../i18n/index.js";
 import { nextId } from "../lib/util.js";
-import { C, F } from "../theme.js";
-import { Primary, Sheet, StickerCard, StickerImage } from "./ui.js";
+import { F, useStyles, useTheme } from "../theme.js";
+import { PasteIcon, PlusIcon, Primary, Sheet, StickerCard, StickerImage } from "./ui.js";
 
 const SOURCES = ["mine", "stickers", "gifs"];
 const GIPHY_ERRORS = ["badkey", "ratelimit", "network"];
 
 function GiphyPicker({ kind, selected, onSelect, cell }) {
+  const st = useStyles(makeStyles);
+  const { C } = useTheme();
   const [query, setQuery] = useState("");
   const [debounced, setDebounced] = useState("");
   const [state, setState] = useState({ status: "idle", items: [] });
@@ -58,6 +60,8 @@ function GiphyPicker({ kind, selected, onSelect, cell }) {
 }
 
 export function ReplySheet({ visible, problem, myStickers, lastAdded, onClose, onPublish, onAddStickers, onPaste }) {
+  const st = useStyles(makeStyles);
+  const { C } = useTheme();
   const { width } = useWindowDimensions();
   const previewId = useMemo(nextId, [problem?.id, visible]);
   const [caption, setCaption] = useState("");
@@ -102,10 +106,10 @@ export function ReplySheet({ visible, problem, myStickers, lastAdded, onClose, o
         <View style={{ gap: 8 }}>
           <View style={st.chips}>
             <Pressable style={[st.chip, st.add, { width: chip, height: chip }]} onPress={onAddStickers} accessibilityLabel={t("reply.addGallery")}>
-              <Text style={st.addTxt}>+</Text>
+              <PlusIcon color={C.fg} size={22} />
             </Pressable>
             <Pressable style={[st.chip, st.add, { width: chip, height: chip }]} onPress={onPaste} accessibilityLabel={t("profile.pasteLabel")}>
-              <Text style={[st.addTxt, { fontSize: 18 }]}>⧉</Text>
+              <PasteIcon color={C.fg} size={21} />
             </Pressable>
             {myStickers.map((sk, i) => (
               <Pressable key={sk.v} onPress={() => setSticker(sk)} accessibilityLabel={t("reply.sticker", { n: i + 1 })}
@@ -126,6 +130,8 @@ export function ReplySheet({ visible, problem, myStickers, lastAdded, onClose, o
 }
 
 export function ProblemSheet({ visible, onClose, onPublish }) {
+  const st = useStyles(makeStyles);
+  const { C } = useTheme();
   const [text, setText] = useState("");
   const [cat, setCat] = useState("altro");
   useEffect(() => { if (visible) { setText(""); setCat("altro"); } }, [visible]);
@@ -155,6 +161,8 @@ export function ProblemSheet({ visible, onClose, onPublish }) {
 }
 
 export function EditProfileSheet({ visible, profile, onClose, onSave }) {
+  const st = useStyles(makeStyles);
+  const { C } = useTheme();
   const [name, setName] = useState(profile.name);
   const [bio, setBio] = useState(profile.bio);
   useEffect(() => { if (visible) { setName(profile.name); setBio(profile.bio); } }, [visible]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -173,26 +181,26 @@ export function EditProfileSheet({ visible, profile, onClose, onSave }) {
   );
 }
 
-const st = StyleSheet.create({
-  sub: { color: C.muted, fontFamily: F.body, fontSize: 13, lineHeight: 18 },
-  lab: { color: C.muted, fontFamily: F.semi, fontSize: 12, letterSpacing: 0.8 },
-  input: { backgroundColor: C.bg, borderWidth: 1, borderColor: C.line, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 11, color: C.fg, fontFamily: F.medium, fontSize: 15 },
-  seg: { flexDirection: "row", gap: 4, backgroundColor: C.bg, padding: 4, borderRadius: 12 },
-  segBtn: { flex: 1, paddingVertical: 8, borderRadius: 9, alignItems: "center" },
-  segOn: { backgroundColor: C.surface, borderWidth: 1, borderColor: C.line },
+const makeStyles = (C) => ({
+  sub: { color: C.muted, fontFamily: F.body, fontSize: 14, lineHeight: 20 },
+  lab: { color: C.muted, fontFamily: F.semi, fontSize: 12, letterSpacing: 0.6 },
+  input: { backgroundColor: C.raised, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 13, color: C.fg, fontFamily: F.medium, fontSize: 16 },
+  seg: { flexDirection: "row", gap: 4, backgroundColor: C.raised, padding: 4, borderRadius: 12 },
+  segBtn: { flex: 1, minHeight: 38, borderRadius: 9, alignItems: "center", justifyContent: "center" },
+  segOn: { backgroundColor: C.surface },
   segTxt: { color: C.muted, fontFamily: F.semi, fontSize: 13 },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  chip: { borderRadius: 12, backgroundColor: C.bg, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: "transparent", overflow: "hidden" },
-  add: { borderStyle: "dashed", borderColor: C.line },
-  addTxt: { color: C.muted, fontSize: 22 },
-  on: { borderColor: C.accent, borderWidth: 3 },
-  small: { color: C.muted, fontFamily: F.body, fontSize: 12, lineHeight: 17 },
+  chip: { borderRadius: 14, backgroundColor: C.raised, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: "transparent", overflow: "hidden" },
+  add: { backgroundColor: "transparent", borderWidth: 1.5, borderStyle: "dashed", borderColor: C.muted },
+  addTxt: { color: C.fg, fontSize: 22 },
+  on: { borderColor: C.fg, borderWidth: 2.5 },
+  small: { color: C.muted, fontFamily: F.body, fontSize: 12.5, lineHeight: 18 },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
-  gitem: { borderRadius: 14, backgroundColor: C.bg, overflow: "hidden", borderWidth: 0, borderColor: "transparent" },
-  gmsg: { color: C.muted, fontFamily: F.body, fontSize: 13, lineHeight: 19, textAlign: "center", paddingVertical: 18 },
+  gitem: { borderRadius: 14, backgroundColor: C.raised, overflow: "hidden", borderWidth: 0, borderColor: "transparent" },
+  gmsg: { color: C.muted, fontFamily: F.body, fontSize: 14, lineHeight: 20, textAlign: "center", paddingVertical: 18 },
   cats: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  cat: { borderWidth: 1, borderColor: C.line, borderRadius: 99, paddingVertical: 7, paddingHorizontal: 13, backgroundColor: C.bg },
-  catOn: { backgroundColor: C.fg, borderColor: C.fg },
-  catTxt: { color: C.fg, fontFamily: F.semi, fontSize: 13 },
+  cat: { borderRadius: 999, minHeight: 38, paddingHorizontal: 15, justifyContent: "center", backgroundColor: C.raised },
+  catOn: { backgroundColor: C.fg },
+  catTxt: { color: C.fg, fontFamily: F.medium, fontSize: 14 },
   attrib: { alignSelf: "flex-end", color: C.muted, fontFamily: F.bold, fontSize: 11, letterSpacing: 0.7 },
 });

@@ -1,9 +1,8 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { orderReplies } from "../store.js";
-import { C, F } from "../theme.js";
-import { Avatar, SaveIcon, StarButton, StickerCard } from "./ui.js";
-import { CategoryBadge } from "./Social.js";
+import { F, useTheme } from "../theme.js";
+import { Avatar, MoreIcon, Primary, SaveIcon, StarButton, StickerCard } from "./ui.js";
 import { categoryLabel } from "../lib/api.js";
 import { t } from "../i18n/index.js";
 import { timeLeft } from "../lib/util.js";
@@ -14,6 +13,7 @@ const SIDE = 20;
 function ProblemScreen({ me, p, first, height, width, users, dispatch, onReply, onUser, onMore, focusMid, savedSet, onToggleSave }) {
   const mine = p.author === me;
   const left = timeLeft(p.closesAt);
+  const tone = useTheme().cat(p.category);
   const listRef = useRef(null);
   const [index, setIndex] = useState(0);
   const [carH, setCarH] = useState(0);
@@ -26,7 +26,8 @@ function ProblemScreen({ me, p, first, height, width, users, dispatch, onReply, 
   const byId = Object.fromEntries(p.memes.map((m) => [m.id, m]));
   const memes = ordered.map((id) => byId[id]).filter(Boolean);
 
-  const cardW = Math.max(120, Math.min(width * 0.78, carH - 50));
+  // the card is its caption (up to 3 lines), the sticker and a row of actions
+  const cardW = Math.max(120, Math.min(width * 0.66, carH - 135));
   const step = cardW + GAP;
 
   // Where each reply stops when you swipe: the first sits on the left, the last on the right,
@@ -65,52 +66,51 @@ function ProblemScreen({ me, p, first, height, width, users, dispatch, onReply, 
   const renderCard = ({ item: m }) => {
     const saved = savedSet.has(m.sticker.v);
     return (
-      <View style={{ width: cardW, gap: 9 }}>
+      <View style={{ width: cardW, gap: 6 }}>
         <Pressable onPress={() => doubleTap(m)} accessibilityHint={t("feed.doubleTap")}>
-          <StickerCard meme={m} size={cardW} />
+          <StickerCard meme={m} size={cardW} ink={tone.fg} muted={tone.muted} />
         </Pressable>
         <View style={st.meta}>
-          <Pressable style={{ flex: 1, minWidth: 0 }} onPress={() => onUser(m.author)}>
-            <Text style={st.who} numberOfLines={1}>@{m.author}</Text>
+          <Pressable style={{ flex: 1, minWidth: 0, minHeight: 44, justifyContent: "center" }} onPress={() => onUser(m.author)}>
+            <Text style={[st.who, { color: tone.muted }]} numberOfLines={1}>{m.author}</Text>
           </Pressable>
           {m.author !== me && (
-            <Pressable onPress={() => onToggleSave(m.sticker)} hitSlop={6}
-              accessibilityLabel={saved ? t("feed.unsave") : t("feed.save")}
-              style={[st.save, saved && { backgroundColor: C.fg, borderColor: C.fg }]}>
-              <SaveIcon saved={saved} color={saved ? C.bg : C.muted} />
+            <Pressable onPress={() => onToggleSave(m.sticker)} hitSlop={4} style={st.iconBtn}
+              accessibilityLabel={saved ? t("feed.unsave") : t("feed.save")} accessibilityState={{ selected: saved }}>
+              <SaveIcon saved={saved} color={tone.fg} />
             </Pressable>
           )}
-          <Pressable style={st.moreSmall} hitSlop={8} onPress={() => onMore({ kind: "reply", id: m.id, pid: p.id, author: m.author })}
+          <Pressable style={st.iconBtn} onPress={() => onMore({ kind: "reply", id: m.id, pid: p.id, author: m.author })}
             accessibilityLabel={t("feed.replyMore")}>
-            <Text style={st.moreTxt}>⋯</Text>
+            <MoreIcon color={tone.muted} size={18} />
           </Pressable>
-          <StarButton on={m.starred} count={m.stars} label={t("feed.likeReply")}
+          <StarButton on={m.starred} count={m.stars} label={t("feed.likeReply")} color={tone.fg}
             onToggle={() => dispatch({ type: "starReply", pid: p.id, mid: m.id })} />
         </View>
       </View>
     );
   };
 
+  const long = p.text.length > 90;
   return (
-    <View style={[st.screen, { height }]}>
+    <View style={[st.screen, { height, backgroundColor: tone.bg }]}>
       <View style={st.problem}>
         <View style={st.pmeta}>
-          <Pressable style={st.ulink} onPress={() => onUser(p.author)}>
-            <Avatar users={users} user={p.author} />
-            <Text style={st.handle}>@{p.author}</Text>
+          <Pressable style={st.ulink} onPress={() => onUser(p.author)} accessibilityRole="link">
+            <Avatar users={users} user={p.author} size={32} tone={{ bg: tone.fg, fg: tone.bg }} />
+            <Text style={[st.handle, { color: tone.fg }]} numberOfLines={1}>{p.author}</Text>
           </Pressable>
-          <Text style={st.muted}>· {p.time}</Text>
-          {p.category && p.category !== "altro" && <CategoryBadge label={categoryLabel(p.category)} />}
-          {mine && <View style={st.yours}><Text style={st.yoursTxt}>{t("feed.yours")}</Text></View>}
-          <Pressable style={st.more} hitSlop={10} onPress={() => onMore({ kind: "problem", id: p.id, author: p.author })}
+          <Text style={[st.muted, { color: tone.muted }]} numberOfLines={1}>{p.time} · {categoryLabel(p.category)}</Text>
+          <Pressable style={st.more} onPress={() => onMore({ kind: "problem", id: p.id, author: p.author })}
             accessibilityLabel={t("feed.problemMore")}>
-            <Text style={st.moreTxt}>⋯</Text>
+            <MoreIcon color={tone.muted} />
           </Pressable>
         </View>
-        <View style={st.prow}>
-          <Text style={st.ptext}>{p.text}</Text>
-          <StarButton big on={p.starred} count={p.stars} label={t("feed.likeProblem")}
+        <Text style={[st.ptext, { color: tone.fg }, long && st.ptextLong]}>{p.text}</Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+          <StarButton on={p.starred} count={p.stars} label={t("feed.likeProblem")} color={tone.fg} size={22} textSize={15}
             onToggle={() => dispatch({ type: "starProblem", pid: p.id })} />
+          {mine && <Text style={[st.yours, { color: tone.muted }]}>{t("feed.yours")}</Text>}
         </View>
       </View>
 
@@ -134,28 +134,27 @@ function ProblemScreen({ me, p, first, height, width, users, dispatch, onReply, 
             nestedScrollEnabled
           />
         ) : (
-          <View style={[st.empty, { width: cardW, height: cardW, marginLeft: SIDE }]}>
-            <Text style={st.emptyTitle}>{t("feed.noReplies")}</Text>
-            <Text style={st.emptyTxt}>{t("feed.noRepliesBody")}</Text>
+          <View style={[st.empty, { width: cardW, height: cardW * 0.9, marginLeft: SIDE, borderColor: tone.muted }]}>
+            <Text style={[st.emptyTitle, { color: tone.fg }]}>{t("feed.noReplies")}</Text>
+            <Text style={[st.emptyTxt, { color: tone.muted }]}>{t("feed.noRepliesBody")}</Text>
           </View>
         ))}
       </View>
 
       <View style={st.actions}>
-        <Text style={[st.count, { flex: 1 }]} numberOfLines={1}>{left?.text ?? ""}</Text>
+        <Text style={[st.left, { color: tone.muted }]} numberOfLines={1}>{left?.text ?? ""}</Text>
         {!left?.closed && (
-          <Pressable style={({ pressed }) => [st.reply, pressed && { opacity: 0.85 }]} onPress={() => onReply(p.id)}>
-            <Text style={st.replyTxt}>{t("feed.reply")}</Text>
-          </Pressable>
+          <Primary label={t("feed.reply")} onPress={() => onReply(p.id)} tone={{ bg: tone.fg, fg: tone.bg }} style={st.reply} />
         )}
       </View>
-      {first && <Text style={st.hint}>{t("feed.swipeHint")}</Text>}
+      {first && <Text style={[st.hint, { color: tone.muted }]}>{t("feed.swipeHint")}</Text>}
     </View>
   );
 }
 
-const Feed = forwardRef(function Feed({ problems, topInset, refreshing, onRefresh, onEndReached, ...rest }, ref) {
+const Feed = forwardRef(function Feed({ problems, topInset, refreshing, onRefresh, onEndReached, onPage, ...rest }, ref) {
   const listRef = useRef(null);
+  const { cat, C } = useTheme();
   const [box, setBox] = useState({ w: 0, h: 0 });
 
   useImperativeHandle(ref, () => ({
@@ -165,8 +164,17 @@ const Feed = forwardRef(function Feed({ problems, topInset, refreshing, onRefres
     },
   }), [problems]);
 
+  // tell the header which problem is on screen, so it takes its colour
+  const pageRef = useRef(onPage);
+  pageRef.current = onPage;
+  const onViewable = useRef(({ viewableItems }) => {
+    const top = viewableItems.find((v) => v.isViewable);
+    if (top) pageRef.current?.(top.item);
+  }).current;
+
   return (
-    <View style={{ flex: 1 }} onLayout={(e) => setBox({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}>
+    <View style={{ flex: 1, backgroundColor: problems[0] ? cat(problems[0].category).bg : C.bg }}
+      onLayout={(e) => setBox({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}>
       {box.h > 0 && (
         <FlatList
           ref={listRef}
@@ -176,7 +184,7 @@ const Feed = forwardRef(function Feed({ problems, topInset, refreshing, onRefres
           showsVerticalScrollIndicator={false}
           getItemLayout={(_, i) => ({ length: box.h, offset: box.h * i, index: i })}
           renderItem={({ item, index }) => (
-            <View style={{ paddingTop: topInset }}>
+            <View style={{ paddingTop: topInset, backgroundColor: cat(item.category).bg }}>
               <ProblemScreen p={item} first={index === 0} height={box.h - topInset} width={box.w} {...rest}
                 focusMid={rest.focus && rest.focus.pid === item.id && rest.focus.mid ? rest.focus : null} />
             </View>
@@ -184,7 +192,9 @@ const Feed = forwardRef(function Feed({ problems, topInset, refreshing, onRefres
           windowSize={3}
           onEndReached={onEndReached}
           onEndReachedThreshold={2}
-          refreshControl={<RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} tintColor={C.accent} progressViewOffset={topInset} />}
+          onViewableItemsChanged={onViewable}
+          viewabilityConfig={{ itemVisiblePercentThreshold: 60 }}
+          refreshControl={<RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} tintColor={C.muted} progressViewOffset={topInset} />}
         />
       )}
     </View>
@@ -194,28 +204,24 @@ const Feed = forwardRef(function Feed({ problems, topInset, refreshing, onRefres
 export default Feed;
 
 const st = StyleSheet.create({
-  screen: { paddingTop: 8, paddingBottom: 12, gap: 14 },
+  screen: { paddingTop: 18, paddingBottom: 14, gap: 12 },
   problem: { paddingHorizontal: SIDE, gap: 10 },
-  pmeta: { flexDirection: "row", alignItems: "center", gap: 7, flexWrap: "wrap" },
-  ulink: { flexDirection: "row", alignItems: "center", gap: 7 },
-  handle: { color: C.fg, fontFamily: F.semi, fontSize: 13 },
-  muted: { color: C.muted, fontFamily: F.body, fontSize: 13 },
-  more: { marginLeft: "auto", paddingHorizontal: 6 },
-  moreSmall: { paddingHorizontal: 2 },
-  moreTxt: { color: C.muted, fontSize: 20, lineHeight: 22, fontFamily: F.bold },
-  yours: { backgroundColor: C.accent, borderRadius: 99, paddingHorizontal: 8, paddingVertical: 2 },
-  yoursTxt: { color: C.accentInk, fontFamily: F.bold, fontSize: 11 },
-  prow: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
-  ptext: { flex: 1, color: C.fg, fontFamily: F.display, fontSize: 23, lineHeight: 27, letterSpacing: -0.3 },
-  meta: { flexDirection: "row", alignItems: "center", gap: 8, minHeight: 32 },
-  who: { color: C.muted, fontFamily: F.body, fontSize: 13 },
-  save: { width: 34, height: 31, borderRadius: 99, backgroundColor: C.surface, borderWidth: 1, borderColor: C.line, alignItems: "center", justifyContent: "center" },
-  empty: { borderWidth: 2, borderStyle: "dashed", borderColor: C.line, borderRadius: 16, alignItems: "center", justifyContent: "center", padding: 24, gap: 6 },
-  emptyTitle: { color: C.fg, fontFamily: F.display, fontSize: 18, textAlign: "center" },
-  emptyTxt: { color: C.muted, fontFamily: F.body, fontSize: 14, lineHeight: 20, textAlign: "center" },
+  pmeta: { flexDirection: "row", alignItems: "center", gap: 10 },
+  ulink: { flexDirection: "row", alignItems: "center", gap: 10, flexShrink: 1, minHeight: 44 },
+  handle: { fontFamily: F.semi, fontSize: 14, flexShrink: 1 },
+  muted: { fontFamily: F.body, fontSize: 14, flexShrink: 1 },
+  more: { marginLeft: "auto", width: 44, height: 44, alignItems: "center", justifyContent: "center", marginRight: -10 },
+  ptext: { fontFamily: F.bold, fontSize: 28, lineHeight: 33, letterSpacing: -0.6 },
+  ptextLong: { fontSize: 24, lineHeight: 29, letterSpacing: -0.4 },
+  yours: { fontFamily: F.medium, fontSize: 13 },
+  meta: { flexDirection: "row", alignItems: "center", gap: 0, minHeight: 44 },
+  who: { fontFamily: F.body, fontSize: 14 },
+  iconBtn: { width: 44, height: 44, alignItems: "center", justifyContent: "center" },
+  empty: { borderWidth: 1.5, borderStyle: "dashed", borderRadius: 20, alignItems: "center", justifyContent: "center", padding: 24, gap: 6, opacity: 0.9 },
+  emptyTitle: { fontFamily: F.bold, fontSize: 18, textAlign: "center" },
+  emptyTxt: { fontFamily: F.body, fontSize: 14, lineHeight: 20, textAlign: "center" },
   actions: { paddingHorizontal: SIDE, flexDirection: "row", alignItems: "center", gap: 12 },
-  count: { color: C.muted, fontFamily: F.body, fontSize: 13 },
-  reply: { marginLeft: "auto", backgroundColor: C.accent, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 18 },
-  replyTxt: { color: C.accentInk, fontFamily: F.bold, fontSize: 15 },
-  hint: { color: C.muted, fontFamily: F.body, fontSize: 12, textAlign: "center", marginTop: -4, paddingHorizontal: SIDE },
+  left: { flex: 1, fontFamily: F.body, fontSize: 13 },
+  reply: { minHeight: 46 },
+  hint: { fontFamily: F.body, fontSize: 12, textAlign: "center", marginTop: -2, paddingHorizontal: SIDE },
 });
