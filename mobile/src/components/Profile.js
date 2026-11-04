@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { memo, useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, Text, useWindowDimensions, View } from "react-native";
 import { fmt, timeLeft } from "../lib/util.js";
 import { F, useStyles, useTheme } from "../theme.js";
@@ -7,7 +7,11 @@ import { Avatar, BackIcon, MenuIcon, MoreIcon, PasteIcon, PlusIcon, Primary, Sec
 import * as api from "../lib/api.js";
 import { orderReplies } from "../store.js";
 
-export default function Profile({ me: myName, user, users, problems, myStickers, showBack, onBack, onGo, onEdit, onAddStickers, onPaste, onRemoveSticker, onSettings, onMore, topInset, loadPosts, postsVersion, onOpenUser, onFollowChange, say }) {
+// What we last loaded for each profile, shown at once next time while fresh data arrives
+const postsCache = new Map();
+const countsCache = new Map();
+
+export default memo(function Profile({ me: myName, user, users, problems, myStickers, showBack, onBack, onGo, onEdit, onAddStickers, onPaste, onRemoveSticker, onSettings, onMore, topInset, loadPosts, postsVersion, onOpenUser, onFollowChange, say }) {
   const [tab, setTab] = useState("problemi");
   const { width } = useWindowDimensions();
   const { C } = useTheme();
@@ -16,22 +20,27 @@ export default function Profile({ me: myName, user, users, problems, myStickers,
   const info = users[user] || { name: user, bio: t("profile.defaultBio") };
 
   // Everything this person posted, also what's too old for the feed; the feed's copy is shown while it loads
-  const [posts, setPosts] = useState(null);
+  const [posts, setPosts] = useState(() => postsCache.get(user) ?? null);
   useEffect(() => {
     let live = true;
-    loadPosts?.().then((ps) => { if (live) setPosts(ps); }).catch(() => {});
+    loadPosts?.().then((ps) => { postsCache.set(user, ps); if (live) setPosts(ps); }).catch(() => {});
     return () => { live = false; };
   }, [loadPosts, postsVersion]);
   const all = posts ?? problems;
 
   // Followers, following, and whether you follow this person
   const uid = users[user]?.id;
-  const [counts, setCounts] = useState(null);
+  const [counts, setCountsState] = useState(() => countsCache.get(user) ?? null);
+  const setCounts = useCallback((v) => setCountsState((old) => {
+    const next = typeof v === "function" ? v(old) : v;
+    countsCache.set(user, next);
+    return next;
+  }), [user]);
   const [busy, setBusy] = useState(false);
   const [list, setList] = useState(null); // { kind, people: null | [...] }
   const reloadCounts = useCallback(() => {
     if (uid) api.loadCounts(uid).then(setCounts).catch(() => {});
-  }, [uid]);
+  }, [uid, setCounts]);
   useEffect(() => { reloadCounts(); }, [reloadCounts, postsVersion]);
   const toggleFollow = async () => {
     if (!uid || !counts) return;
@@ -205,7 +214,7 @@ export default function Profile({ me: myName, user, users, problems, myStickers,
       </Sheet>
     </ScrollView>
   );
-}
+});
 
 const makeStyles = (C) => ({
   wrap: { paddingHorizontal: 20, paddingBottom: 32, gap: 16, maxWidth: 600, width: "100%", alignSelf: "center" },

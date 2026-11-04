@@ -376,6 +376,23 @@ export default function StickbackApp({ userId }) {
     onRefresh: async () => { setRefreshing(true); await latest.current.refresh(); setRefreshing(false); },
   }), []);
 
+  latest.current.profile = { goToProblem, fromGallery, fromClipboard, askRemoveSticker, feedMode };
+  const profileFns = useMemo(() => ({
+    onBack: () => setView("feed"),
+    onGo: (...a) => latest.current.profile.goToProblem(...a),
+    onEdit: () => setSheet({ kind: "edit" }),
+    onAddStickers: () => latest.current.profile.fromGallery(),
+    onPaste: () => latest.current.profile.fromClipboard(),
+    onRemoveSticker: (sk) => latest.current.profile.askRemoveSticker(sk),
+    onSettings: () => setSettings(true),
+    say,
+    onOpenUser: (pr) => {
+      dispatch({ type: "setUsers", users: { [pr.username]: { id: pr.id, name: pr.name, bio: pr.bio } } });
+      latest.current.openProfile(pr.username, true);
+    },
+    onFollowChange: () => { if (latest.current.profile.feedMode === "following") latest.current.refresh(); },
+  }), [say]);
+
   const replyTo = sheet?.kind === "reply" ? problems.find((p) => p.id === sheet.pid) : null;
   const topInset = insets.top + TOPBAR_HEIGHT;
 
@@ -435,15 +452,13 @@ export default function StickbackApp({ userId }) {
           <FeedHeader topInset={insets.top} category={category} onCategory={setCategory} mode={feedMode} onMode={setFeedMode}
             tone={problems.length ? cat(pageCat ?? problems[0].category) : { bg: C.bg, fg: C.fg, muted: C.muted, line: C.line }} />
         </View>
-        {view === "profile" && profileUser && (
-          <View style={StyleSheet.absoluteFill}>
+        {profileUser && (
+          // kept on screen but hidden while you're on the feed: coming back to it is instant
+          <View style={[StyleSheet.absoluteFill, view !== "profile" && st.off]} pointerEvents={view === "profile" ? "auto" : "none"}
+            accessibilityElementsHidden={view !== "profile"} importantForAccessibility={view === "profile" ? "auto" : "no-hide-descendants"}>
             <Profile key={profileUser} me={me} user={profileUser} users={users} problems={problems} myStickers={myStickers}
-              topInset={insets.top} showBack={profileBack} onBack={() => setView("feed")} onGo={goToProblem}
-              onEdit={() => setSheet({ kind: "edit" })} onAddStickers={fromGallery} onPaste={fromClipboard}
-              onRemoveSticker={askRemoveSticker} onSettings={() => setSettings(true)} onMore={setMore}
-              loadPosts={loadPosts} postsVersion={postsVersion} say={say}
-              onOpenUser={(pr) => { dispatch({ type: "setUsers", users: { [pr.username]: { id: pr.id, name: pr.name, bio: pr.bio } } }); openProfile(pr.username, true); }}
-              onFollowChange={() => { if (feedMode === "following") refresh(); }} />
+              topInset={insets.top} showBack={profileBack} loadPosts={loadPosts} postsVersion={postsVersion} onMore={setMore}
+              {...profileFns} />
           </View>
         )}
       </View>
@@ -497,6 +512,7 @@ const makeStyles = (C) => ({
   emptyTitle: { color: C.fg, fontFamily: F.bold, fontSize: 24, letterSpacing: -0.5, textAlign: "center" },
   link: { color: C.muted, fontFamily: F.medium, fontSize: 15, textDecorationLine: "underline", padding: 10 },
   hidden: { opacity: 0 },
+  off: { opacity: 0, transform: [{ translateX: 10000 }] },
   tabbar: { flexDirection: "row", alignItems: "center", justifyContent: "space-around", borderTopWidth: StyleSheet.hairlineWidth, borderColor: C.line, backgroundColor: C.bg, paddingTop: 8 },
   tab: { width: 60, height: 46, alignItems: "center", justifyContent: "center" },
   avRing: { borderRadius: 18, borderWidth: 1.5, borderColor: "transparent", padding: 2 },

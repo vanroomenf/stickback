@@ -137,8 +137,8 @@ export function Avatar({ users, user, size = 30, tone }) {
 // Sticker or GIF image; GIFs and animated WebP play automatically
 export function StickerImage({ sticker, style, thumb }) {
   return (
-    <Image source={{ uri: thumb ? sticker.thumb || sticker.v : sticker.v }} style={style}
-      contentFit="contain" transition={120} autoplay />
+    <Image source={{ uri: thumb ? sticker.thumb || sticker.v : sticker.v }} style={style} recyclingKey={sticker.v}
+      contentFit="contain" transition={100} cachePolicy="memory-disk" autoplay />
   );
 }
 

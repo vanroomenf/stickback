@@ -19,14 +19,16 @@ const withoutExamplesOf = (list, stickers) => {
 export function reducer(state, a) {
   switch (a.type) {
     case "setFeed":
-      return { ...state, problems: a.problems, users: { ...state.users, ...a.users }, loaded: true };
+      return { ...state, problems: a.problems, users: mergeUsers(state.users, a.users), loaded: true };
     case "appendFeed": {
       // next page of the feed; skip problems already on screen (the ranking moves a little between pages)
       const seen = new Set(state.problems.map((p) => p.id));
-      return { ...state, problems: [...state.problems, ...a.problems.filter((p) => !seen.has(p.id))], users: { ...state.users, ...a.users } };
+      return { ...state, problems: [...state.problems, ...a.problems.filter((p) => !seen.has(p.id))], users: mergeUsers(state.users, a.users) };
     }
-    case "setUsers":
-      return { ...state, users: { ...state.users, ...a.users } };
+    case "setUsers": {
+      const users = mergeUsers(state.users, a.users);
+      return users === state.users ? state : { ...state, users };
+    }
     case "starProblem":
       return mapProblem(state, a.pid, toggle);
     case "starReply":
@@ -53,6 +55,16 @@ export function reducer(state, a) {
     default:
       return state;
   }
+}
+
+// Same object back when nothing changed, so screens that depend on it don't redraw
+function mergeUsers(old, add = {}) {
+  let changed = false;
+  for (const [k, v] of Object.entries(add)) {
+    const o = old[k];
+    if (!o || o.id !== v.id || o.name !== v.name || o.bio !== v.bio) { changed = true; break; }
+  }
+  return changed ? { ...old, ...add } : old;
 }
 
 // Most stars first

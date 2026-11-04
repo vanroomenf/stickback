@@ -17,7 +17,6 @@ const ProblemScreen = memo(function ProblemScreen({ me, p, first, height, width,
   const left = timeLeft(p.closesAt);
   const tone = useTheme().cat(p.category);
   const listRef = useRef(null);
-  const [index, setIndex] = useState(0);
   const [carH, setCarH] = useState(0);
   const lastTap = useRef({ id: null, t: 0 });
 
@@ -48,7 +47,6 @@ const ProblemScreen = memo(function ProblemScreen({ me, p, first, height, width,
   const goTo = (i) => {
     const k = Math.max(0, Math.min(i, n - 1));
     listRef.current?.scrollToOffset({ offset: offsets[k] ?? 0, animated: true });
-    setIndex(k);
   };
 
   // Jump to a reply after publishing or when coming from the profile
@@ -134,8 +132,6 @@ const ProblemScreen = memo(function ProblemScreen({ me, p, first, height, width,
             decelerationRate="fast"
             disableIntervalMomentum
             contentContainerStyle={{ paddingHorizontal: SIDE, gap: GAP, alignItems: "center" }}
-            onScroll={(e) => setIndex(nearest(e.nativeEvent.contentOffset.x))}
-            scrollEventThrottle={32}
             nestedScrollEnabled
           />
         ) : (
