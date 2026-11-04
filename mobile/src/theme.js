@@ -62,7 +62,11 @@ function build(dark) {
   // colours of a category: { bg, fg, muted, line }
   const cat = (k) => {
     const [bg, fg, muted] = (CAT[k] ?? CAT.altro)[mode];
-    return { bg, fg, muted, line: dark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.10)" };
+    return {
+      bg, fg, muted,
+      line: dark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.10)",
+      card: dark ? "rgba(255,255,255,0.07)" : "rgba(255,255,255,0.55)", // behind each reply
+    };
   };
   // a stable soft colour per username, for avatars
   const person = (name = "") => {

@@ -155,11 +155,15 @@ export function StickerCard({ meme, size, placeholder, compact, ink, muted }) {
   if (compact) return box;
   return (
     <View style={{ width: size, gap: 10 }}>
-      <Text numberOfLines={3} style={[s.caption, { color: placeholder ? muted ?? C.muted : ink ?? C.fg }]}>{meme.caption}</Text>
+      <Text numberOfLines={3} style={[s.caption, captionSize(meme.caption), { color: placeholder ? muted ?? C.muted : ink ?? C.fg }]}>{meme.caption}</Text>
       {box}
     </View>
   );
 }
+
+// Long captions get a smaller size, so all 50 characters fit in three lines
+const captionSize = (text = "") =>
+  text.length <= 24 ? { fontSize: 18, lineHeight: 23 } : text.length <= 38 ? { fontSize: 16, lineHeight: 21 } : { fontSize: 14.5, lineHeight: 19 };
 
 // ───────── Sheets, toasts, buttons ─────────
 export function Sheet({ visible, title, onClose, children }) {

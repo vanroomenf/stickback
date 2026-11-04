@@ -5,12 +5,19 @@ import { t } from "../i18n/index.js";
 import { F } from "../theme.js";
 import { Logo } from "./ui.js";
 
-export const TOPBAR_HEIGHT = 92;
+export const TOPBAR_HEIGHT = 96;
 
-export function FeedHeader({ topInset, category, onCategory, tone }) {
+export function FeedHeader({ topInset, category, onCategory, tone, mode, onMode }) {
   return (
     <View style={[st.bar, { paddingTop: topInset + 10, backgroundColor: tone.bg, borderColor: tone.line }]}>
-      <View style={st.row}><Logo color={tone.fg} /></View>
+      <View style={st.row}>
+        <View style={{ flex: 1 }}><Logo color={tone.fg} /></View>
+        {[["foryou", t("feed.forYou")], ["following", t("feed.following")]].map(([k, l]) => (
+          <Pressable key={k} onPress={() => onMode(k)} style={st.mode} accessibilityRole="tab" accessibilityState={{ selected: mode === k }}>
+            <Text style={[st.modeTxt, { color: mode === k ? tone.fg : tone.muted, fontFamily: mode === k ? F.bold : F.medium }]}>{l}</Text>
+          </Pressable>
+        ))}
+      </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={st.tabs}>
         {[[null, t("cat.all")], ...categories()].map(([k, l]) => {
           const on = category === k;
@@ -28,7 +35,9 @@ export function FeedHeader({ topInset, category, onCategory, tone }) {
 
 const st = StyleSheet.create({
   bar: { position: "absolute", top: 0, left: 0, right: 0, borderBottomWidth: StyleSheet.hairlineWidth },
-  row: { paddingHorizontal: 20, paddingBottom: 6 },
+  row: { paddingLeft: 20, paddingRight: 10, flexDirection: "row", alignItems: "center", minHeight: 36 },
+  mode: { minHeight: 40, paddingHorizontal: 10, justifyContent: "center" },
+  modeTxt: { fontSize: 15 },
   tabs: { paddingHorizontal: 20, gap: 20 },
   tab: { paddingTop: 8, minHeight: 40, justifyContent: "space-between" },
   tabTxt: { fontSize: 15 },

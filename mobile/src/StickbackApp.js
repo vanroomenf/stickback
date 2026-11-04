@@ -43,6 +43,8 @@ export default function StickbackApp({ userId }) {
   const [ask, setAsk] = useState(null); // "are you sure?" before deleting: { title, text, confirm, run }
   const [settings, setSettings] = useState(false);
   const [category, setCategory] = useState(null);
+  const [feedMode, setFeedMode] = useState("foryou"); // "foryou" | "following"
+  const [followMissing, setFollowMissing] = useState(false);
   const [feedLangs, setFeedLangs] = useState(feedLanguages); // languages of the problems in your feed
   const [postsVersion, setPostsVersion] = useState(0); // bumps when you delete or post, so the profile reloads
   const [pushAsk, setPushAsk] = useState(false); // "want to know when people reply?" after your first post
@@ -61,7 +63,8 @@ export default function StickbackApp({ userId }) {
   // ───────── Loading ─────────
   const refresh = useCallback(async () => {
     try {
-      const { problems: ps, users: us, more } = await api.loadFeed(userId, { category, langs: feedLangs });
+      const { problems: ps, users: us, more, missing } = await api.loadFeed(userId, { category, langs: feedLangs, mode: feedMode });
+      setFollowMissing(!!missing);
       dispatch({ type: "setFeed", problems: ps, users: us });
       paging.current = { more, busy: false };
       setLoadError(false);
@@ -69,7 +72,7 @@ export default function StickbackApp({ userId }) {
       setLoadError(true);
       say(t("toast.loadFail"));
     }
-  }, [userId, say, category, feedLangs]);
+  }, [userId, say, category, feedLangs, feedMode]);
 
   useEffect(() => { refresh(); }, [refresh]);
 
@@ -79,13 +82,13 @@ export default function StickbackApp({ userId }) {
     if (!pg.more || pg.busy) return;
     pg.busy = true;
     try {
-      const { problems: ps, users: us, more } = await api.loadFeed(userId, { category, langs: feedLangs, skip: problemsRef.current.length });
+      const { problems: ps, users: us, more } = await api.loadFeed(userId, { category, langs: feedLangs, mode: feedMode, skip: problemsRef.current.length });
       dispatch({ type: "appendFeed", problems: ps, users: us });
       paging.current = { more, busy: false };
     } catch {
       pg.busy = false; // try again on the next scroll
     }
-  }, [userId, category, feedLangs]);
+  }, [userId, category, feedLangs, feedMode]);
 
   // ───────── Push notifications ─────────
   const savePush = useCallback(async (ask) => {
@@ -391,13 +394,18 @@ export default function StickbackApp({ userId }) {
       <View style={{ flex: 1 }}>
         <View style={[StyleSheet.absoluteFill, view !== "feed" && st.hidden]} pointerEvents={view === "feed" ? "auto" : "none"}>
           {problems.length ? (
-            <Feed key={`feed-${category}-${feedLangs.join()}`} ref={feedRef} me={me} problems={problems} users={users} dispatch={act} focus={focus} topInset={topInset}
+            <Feed key={`feed-${feedMode}-${category}-${feedLangs.join()}`} ref={feedRef} me={me} problems={problems} users={users} dispatch={act} focus={focus} topInset={topInset}
               refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await refresh(); setRefreshing(false); }} onEndReached={loadMore} onPage={(p) => setPageCat(p.category)}
               onReply={(pid) => { setLastAdded(null); setSheet({ kind: "reply", pid }); }}
               onUser={(u) => openProfile(u, true)} onMore={setMore} savedSet={savedSet} onToggleSave={toggleSave} />
           ) : (
             <View style={[st.center, { flex: 1, paddingTop: topInset, paddingHorizontal: 32, gap: 14 }]}>
-              {category ? (
+              {feedMode === "following" ? (
+                <>
+                  <Text style={st.emptyTitle}>{t("feed.followingEmptyTitle")}</Text>
+                  <Text style={st.centerTxt}>{followMissing ? t("feed.followingMissing") : t("feed.followingEmptyBody")}</Text>
+                </>
+              ) : category ? (
                 <>
                   <Text style={st.emptyTitle}>{t("app.emptyCatTitle")}</Text>
                   <Text style={st.centerTxt}>{t("app.emptyCatBody")}</Text>
@@ -412,7 +420,7 @@ export default function StickbackApp({ userId }) {
               )}
             </View>
           )}
-          <FeedHeader topInset={insets.top} category={category} onCategory={setCategory}
+          <FeedHeader topInset={insets.top} category={category} onCategory={setCategory} mode={feedMode} onMode={setFeedMode}
             tone={problems.length ? cat(pageCat ?? problems[0].category) : { bg: C.bg, fg: C.fg, muted: C.muted, line: C.line }} />
         </View>
         {view === "profile" && profileUser && (
@@ -421,7 +429,9 @@ export default function StickbackApp({ userId }) {
               topInset={insets.top} showBack={profileBack} onBack={() => setView("feed")} onGo={goToProblem}
               onEdit={() => setSheet({ kind: "edit" })} onAddStickers={fromGallery} onPaste={fromClipboard}
               onRemoveSticker={askRemoveSticker} onSettings={() => setSettings(true)} onMore={setMore}
-              loadPosts={loadPosts} postsVersion={postsVersion} />
+              loadPosts={loadPosts} postsVersion={postsVersion} say={say}
+              onOpenUser={(pr) => { dispatch({ type: "setUsers", users: { [pr.username]: { id: pr.id, name: pr.name, bio: pr.bio } } }); openProfile(pr.username, true); }}
+              onFollowChange={() => { if (feedMode === "following") refresh(); }} />
           </View>
         )}
       </View>

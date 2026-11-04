@@ -23,7 +23,15 @@ export const categoryLabel = (k) => t(`cat.${CATEGORY_KEYS.includes(k) ? k : "al
 // langs: the languages of the problems to show, e.g. ["it", "en"]
 export const PAGE = 20;
 // skip: how many problems you already have, to load the next page. more = there may be others after these.
-export async function loadFeed(uid, { category = null, langs = null, skip = 0 } = {}) {
+// mode "following": the newest problems of the people you follow (any language)
+export async function loadFeed(uid, { category = null, langs = null, skip = 0, mode = "foryou" } = {}) {
+  if (mode === "following") {
+    const { data, error } = await supabase.rpc("feed_following", { cat: category, lim: PAGE, skip });
+    if (error?.code === "PGRST202") return { problems: [], users: {}, more: false, missing: true }; // migration 0007 not run yet
+    fail(error);
+    const ids = data.map((r) => r.id);
+    return { ...(await loadProblems(uid, ids)), more: ids.length === PAGE };
+  }
   let { data: ranked, error: rankError } = await supabase.rpc("feed_for_you", { cat: category, langs, lim: PAGE, skip });
   // database without migration 0005 yet: the old feed, all languages
   if (rankError?.code === "PGRST202") ({ data: ranked, error: rankError } = await supabase.rpc("feed_for_you", { cat: category, lim: PAGE, skip }));
@@ -244,6 +252,33 @@ export async function deleteProblem(id) {
 export async function deleteReply(id) {
   const { error } = await supabase.from("replies").delete().eq("id", id);
   fail(error);
+}
+
+// ───────── Following ─────────
+export async function follow(userId) {
+  const { error } = await supabase.from("follows").insert({ followee_id: userId });
+  if (error && error.code !== "23505") throw error; // already following
+}
+export async function unfollow(userId) {
+  const { error } = await supabase.from("follows").delete().eq("followee_id", userId).eq("follower_id", (await me()).id);
+  fail(error);
+}
+// { followers, following, iFollow }
+export async function loadCounts(userId) {
+  const { data, error } = await supabase.rpc("profile_counts", { uid: userId });
+  if (error?.code === "PGRST202") return null;
+  fail(error);
+  const r = data?.[0] ?? {};
+  return { followers: Number(r.followers ?? 0), following: Number(r.following ?? 0), iFollow: !!r.i_follow };
+}
+// kind "followers": who follows userId; "following": who userId follows
+export async function loadFollowList(userId, kind) {
+  const q = kind === "followers"
+    ? supabase.from("follows").select("created_at, who:profiles!follows_follower_id_fkey(id, username, name, bio)").eq("followee_id", userId)
+    : supabase.from("follows").select("created_at, who:profiles!follows_followee_id_fkey(id, username, name, bio)").eq("follower_id", userId);
+  const { data, error } = await q.order("created_at", { ascending: false }).limit(200);
+  fail(error);
+  return data.map((r) => r.who).filter(Boolean);
 }
 
 // ───────── Push notifications ─────────

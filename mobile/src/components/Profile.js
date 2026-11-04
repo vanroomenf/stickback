@@ -1,12 +1,13 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, Text, useWindowDimensions, View } from "react-native";
 import { fmt, timeLeft } from "../lib/util.js";
 import { F, useStyles, useTheme } from "../theme.js";
 import { t, tn } from "../i18n/index.js";
-import { Avatar, BackIcon, MenuIcon, MoreIcon, PasteIcon, PlusIcon, Secondary, StarIcon, StickerCard, StickerImage } from "./ui.js";
+import { Avatar, BackIcon, MenuIcon, MoreIcon, PasteIcon, PlusIcon, Primary, Secondary, Sheet, StarIcon, StickerCard, StickerImage } from "./ui.js";
+import * as api from "../lib/api.js";
 import { orderReplies } from "../store.js";
 
-export default function Profile({ me: myName, user, users, problems, myStickers, showBack, onBack, onGo, onEdit, onAddStickers, onPaste, onRemoveSticker, onSettings, onMore, topInset, loadPosts, postsVersion }) {
+export default function Profile({ me: myName, user, users, problems, myStickers, showBack, onBack, onGo, onEdit, onAddStickers, onPaste, onRemoveSticker, onSettings, onMore, topInset, loadPosts, postsVersion, onOpenUser, onFollowChange, say }) {
   const [tab, setTab] = useState("problemi");
   const { width } = useWindowDimensions();
   const { C } = useTheme();
@@ -22,6 +23,35 @@ export default function Profile({ me: myName, user, users, problems, myStickers,
     return () => { live = false; };
   }, [loadPosts, postsVersion]);
   const all = posts ?? problems;
+
+  // Followers, following, and whether you follow this person
+  const uid = users[user]?.id;
+  const [counts, setCounts] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [list, setList] = useState(null); // { kind, people: null | [...] }
+  const reloadCounts = useCallback(() => {
+    if (uid) api.loadCounts(uid).then(setCounts).catch(() => {});
+  }, [uid]);
+  useEffect(() => { reloadCounts(); }, [reloadCounts, postsVersion]);
+  const toggleFollow = async () => {
+    if (!uid || !counts) return;
+    const on = !counts.iFollow;
+    setBusy(true);
+    setCounts((c) => ({ ...c, iFollow: on, followers: c.followers + (on ? 1 : -1) }));
+    try {
+      await (on ? api.follow(uid) : api.unfollow(uid));
+      say?.(t(on ? "toast.followed" : "toast.unfollowed", { user }));
+      onFollowChange?.();
+    } catch {
+      setCounts((c) => ({ ...c, iFollow: !on, followers: c.followers + (on ? -1 : 1) }));
+      say?.(t("toast.saveFail"));
+    } finally { setBusy(false); }
+  };
+  const openList = (kind) => {
+    if (!uid) return;
+    setList({ kind, people: null });
+    api.loadFollowList(uid, kind).then((people) => setList({ kind, people })).catch(() => setList({ kind, people: [] }));
+  };
 
   const probs = all.filter((p) => p.author === user);
   const replies = all.flatMap((p) => p.memes.filter((m) => m.author === user).map((m) => ({ p, m })));
@@ -55,11 +85,15 @@ export default function Profile({ me: myName, user, users, problems, myStickers,
       <View style={st.head}>
         <Avatar users={users} user={user} size={84} />
         <View style={st.stats}>
-          {[[probs.length, t("profile.problems")], [replies.length, t("profile.replies")], [fmt(stars), t("profile.stars")]].map(([v, l]) => (
-            <View key={l} style={st.stat}>
+          {[
+            [probs.length, t("profile.problems")],
+            [fmt(stars), t("profile.stars")],
+            ...(counts ? [[fmt(counts.followers), t("profile.followers"), "followers"], [fmt(counts.following), t("profile.followingCount"), "following"]] : []),
+          ].map(([v, l, kind]) => (
+            <Pressable key={l} style={st.stat} disabled={!kind} onPress={() => openList(kind)} accessibilityRole={kind ? "button" : "text"}>
               <Text style={st.statNum}>{v}</Text>
               <Text style={st.statLbl} numberOfLines={1}>{l}</Text>
-            </View>
+            </Pressable>
           ))}
         </View>
       </View>
@@ -68,6 +102,9 @@ export default function Profile({ me: myName, user, users, problems, myStickers,
         {!!info.bio && <Text style={st.bio}>{info.bio}</Text>}
       </View>
       {me && <Secondary label={t("profile.edit")} onPress={onEdit} />}
+      {!me && counts && (counts.iFollow
+        ? <Secondary label={t("profile.unfollow")} onPress={toggleFollow} />
+        : <Primary label={t("profile.follow")} onPress={toggleFollow} disabled={busy} style={{ minHeight: 42 }} />)}
 
       <View style={st.tabs}>
         {tabs.map(([k, l]) => (
@@ -152,6 +189,20 @@ export default function Profile({ me: myName, user, users, problems, myStickers,
           <Text style={st.note}>{t("profile.note")}</Text>
         </>
       )}
+
+      <Sheet visible={!!list} title={list ? t(list.kind === "followers" ? "profile.followersOf" : "profile.followedBy", { user }) : ""} onClose={() => setList(null)}>
+        {list?.people === null ? <ActivityIndicator color={C.muted} style={{ paddingVertical: 20 }} />
+          : list?.people.length ? list.people.map((pr) => (
+            <Pressable key={pr.id} style={({ pressed }) => [st.person, pressed && { opacity: 0.7 }]}
+              onPress={() => { setList(null); onOpenUser?.(pr); }} accessibilityRole="button">
+              <Avatar users={{ [pr.username]: pr }} user={pr.username} size={40} />
+              <View style={{ flex: 1 }}>
+                <Text style={st.personName} numberOfLines={1}>{pr.username}</Text>
+                {!!pr.name && pr.name !== pr.username && <Text style={st.small} numberOfLines={1}>{pr.name}</Text>}
+              </View>
+            </Pressable>
+          )) : <Text style={st.empty}>{t("profile.nobody")}</Text>}
+      </Sheet>
     </ScrollView>
   );
 }
@@ -163,10 +214,12 @@ const makeStyles = (C) => ({
   iconBtn: { width: 44, height: 44, alignItems: "center", justifyContent: "center", marginLeft: -6 },
   head: { flexDirection: "row", alignItems: "center", gap: 18 },
   stats: { flex: 1, flexDirection: "row" },
-  stat: { flex: 1, alignItems: "center", gap: 2 },
+  stat: { flex: 1, alignItems: "center", gap: 2, minHeight: 44, justifyContent: "center" },
   statNum: { color: C.fg, fontFamily: F.bold, fontSize: 19 },
-  statLbl: { color: C.muted, fontFamily: F.body, fontSize: 13 },
+  statLbl: { color: C.muted, fontFamily: F.body, fontSize: 12.5 },
   name: { color: C.fg, fontFamily: F.semi, fontSize: 16 },
+  person: { flexDirection: "row", alignItems: "center", gap: 12, minHeight: 52 },
+  personName: { color: C.fg, fontFamily: F.semi, fontSize: 16 },
   bio: { color: C.fg, fontFamily: F.body, fontSize: 15, lineHeight: 21, opacity: 0.86 },
   tabs: { flexDirection: "row", borderBottomWidth: 1, borderColor: C.line, marginHorizontal: -20, paddingHorizontal: 20, marginTop: 2 },
   tab: { flex: 1, alignItems: "center", paddingTop: 10, minHeight: 44, justifyContent: "space-between" },

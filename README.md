@@ -178,6 +178,14 @@ npx eas-cli@latest build --profile production --platform all         # per App S
 npx eas-cli@latest submit --platform ios                             # invio a App Store Connect / TestFlight
 ```
 
+## Seguire le persone
+
+Migrazione `supabase/migrations/0007_follows.sql` (si può eseguire anche se una vecchia versione di 0004 aveva già creato `follows`).
+
+- **Segui** sul profilo di qualcuno; nel profilo ci sono i contatori Follower e Seguiti, e toccandoli si vede la lista.
+- In alto nel feed: **Per te** (il feed di sempre, con una piccola spinta per chi segui) e **Seguiti** (i problemi più recenti delle persone che segui, ultimi 30 giorni, in qualsiasi lingua).
+- Bloccare qualcuno toglie anche i "segui" tra voi due.
+
 ## Prossimi passi per l'app negli store
 
 - **Condividi → Stickback anche su iPhone**: con una Share Extension nell'app nativa.

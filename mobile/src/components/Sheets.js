@@ -91,7 +91,7 @@ export function ReplySheet({ visible, problem, myStickers, lastAdded, onClose, o
       <View style={{ gap: 6 }}>
         <Text style={st.lab}>{t("reply.yourText")}</Text>
         <TextInput value={caption} onChangeText={setCaption} maxLength={50} placeholder={t("reply.ph")}
-          placeholderTextColor={C.muted} style={st.input} returnKeyType="send" onSubmitEditing={publish} />
+          placeholderTextColor={C.muted} style={st.input} returnKeyType="done" submitBehavior="blurAndSubmit" />
       </View>
 
       <View style={st.seg}>
@@ -140,7 +140,7 @@ export function ProblemSheet({ visible, onClose, onPublish }) {
       <Text style={st.sub}>{t("problem.sub")}</Text>
       <View style={{ gap: 6 }}>
         <Text style={st.lab}>{t("problem.what")}</Text>
-        <TextInput value={text} onChangeText={setText} maxLength={140} multiline autoFocus
+        <TextInput value={text} onChangeText={setText} maxLength={140} multiline autoFocus returnKeyType="done" submitBehavior="blurAndSubmit"
           placeholder={t("problem.ph")} placeholderTextColor={C.muted}
           style={[st.input, { minHeight: 84, textAlignVertical: "top" }]} />
         <Text style={[st.small, { alignSelf: "flex-end" }]}>{text.length} / 140</Text>

@@ -7,7 +7,8 @@ import { categoryLabel } from "../lib/api.js";
 import { t } from "../i18n/index.js";
 import { timeLeft } from "../lib/util.js";
 
-const GAP = 12;
+const GAP = 10;
+const PAD = 12; // inside each reply card
 const SIDE = 20;
 
 function ProblemScreen({ me, p, first, height, width, users, dispatch, onReply, onUser, onMore, focusMid, savedSet, onToggleSave }) {
@@ -27,17 +28,19 @@ function ProblemScreen({ me, p, first, height, width, users, dispatch, onReply, 
   const memes = ordered.map((id) => byId[id]).filter(Boolean);
 
   // the card is its caption (up to 3 lines), the sticker and a row of actions
-  const cardW = Math.max(120, Math.min(width * 0.66, carH - 135));
-  const step = cardW + GAP;
+  // cardW is the sticker; the card adds its padding around it
+  const cardW = Math.max(110, Math.min(width * 0.62, carH - 160));
+  const step = cardW + PAD * 2 + GAP;
 
   // Where each reply stops when you swipe: the first sits on the left, the last on the right,
   // every reply in between is centred on the screen
   const n = memes.length;
-  const maxX = Math.max(0, SIDE * 2 + n * cardW + (n - 1) * GAP - width);
+  const full = cardW + PAD * 2;
+  const maxX = Math.max(0, SIDE * 2 + n * full + (n - 1) * GAP - width);
   const offsets = memes.map((_, i) => {
     if (i === 0) return 0;
     if (i === n - 1) return maxX;
-    return Math.min(maxX, Math.max(0, SIDE + i * step - (width - cardW) / 2));
+    return Math.min(maxX, Math.max(0, SIDE + i * step - (width - full) / 2));
   });
   const nearest = (x) => offsets.reduce((best, o, i) => (Math.abs(o - x) < Math.abs(offsets[best] - x) ? i : best), 0);
 
@@ -66,7 +69,7 @@ function ProblemScreen({ me, p, first, height, width, users, dispatch, onReply, 
   const renderCard = ({ item: m }) => {
     const saved = savedSet.has(m.sticker.v);
     return (
-      <View style={{ width: cardW, gap: 6 }}>
+      <View style={[st.card, { width: cardW + PAD * 2, backgroundColor: tone.card }]}>
         <Pressable onPress={() => doubleTap(m)} accessibilityHint={t("feed.doubleTap")}>
           <StickerCard meme={m} size={cardW} ink={tone.fg} muted={tone.muted} />
         </Pressable>
@@ -91,7 +94,8 @@ function ProblemScreen({ me, p, first, height, width, users, dispatch, onReply, 
     );
   };
 
-  const long = p.text.length > 90;
+  // the full 140 characters must fit without pushing the replies off the screen
+  const size = p.text.length <= 60 ? st.ptext : p.text.length <= 100 ? st.ptextLong : st.ptextLonger;
   return (
     <View style={[st.screen, { height, backgroundColor: tone.bg }]}>
       <View style={st.problem}>
@@ -106,7 +110,7 @@ function ProblemScreen({ me, p, first, height, width, users, dispatch, onReply, 
             <MoreIcon color={tone.muted} />
           </Pressable>
         </View>
-        <Text style={[st.ptext, { color: tone.fg }, long && st.ptextLong]}>{p.text}</Text>
+        <Text style={[size, { color: tone.fg }]}>{p.text}</Text>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
           <StarButton on={p.starred} count={p.stars} label={t("feed.likeProblem")} color={tone.fg} size={22} textSize={15}
             onToggle={() => dispatch({ type: "starProblem", pid: p.id })} />
@@ -212,7 +216,9 @@ const st = StyleSheet.create({
   muted: { fontFamily: F.body, fontSize: 14, flexShrink: 1 },
   more: { marginLeft: "auto", width: 44, height: 44, alignItems: "center", justifyContent: "center", marginRight: -10 },
   ptext: { fontFamily: F.bold, fontSize: 28, lineHeight: 33, letterSpacing: -0.6 },
-  ptextLong: { fontSize: 24, lineHeight: 29, letterSpacing: -0.4 },
+  ptextLong: { fontFamily: F.bold, fontSize: 24, lineHeight: 29, letterSpacing: -0.4 },
+  ptextLonger: { fontFamily: F.bold, fontSize: 20, lineHeight: 25, letterSpacing: -0.3 },
+  card: { borderRadius: 22, padding: PAD, paddingBottom: 2, gap: 4 },
   yours: { fontFamily: F.medium, fontSize: 13 },
   meta: { flexDirection: "row", alignItems: "center", gap: 0, minHeight: 44 },
   who: { fontFamily: F.body, fontSize: 14 },
