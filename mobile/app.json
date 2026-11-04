@@ -42,7 +42,8 @@
         }
       ],
       "expo-localization",
-      "expo-notifications"
+      "expo-notifications",
+      "expo-sharing"
     ],
     "scheme": "stickback",
     "backgroundColor": "#FFF8F2",

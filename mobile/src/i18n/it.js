@@ -244,6 +244,15 @@ export default {
   "profile.note": "Aggiungi i tuoi sticker dalla galleria, oppure incolla uno sticker copiato (su iPhone: fai uno screenshot, aprilo in Foto, tieni premuto sullo sticker e scegli Copia). Puoi salvare anche quelli che usano gli altri, con il pulsante accanto alla stella. Finché non ne aggiungi, qui trovi qualche esempio da GIPHY. I tuoi sticker sono salvati nel tuo account, quindi li ritrovi anche su un altro telefono.",
 
   // Reply, post, edit
+  "sticker.title": "Il tuo sticker",
+  "sticker.open": "Sticker {n}: condividi o togli",
+  "sticker.share": "Condividi…",
+  "sticker.shareHint": "Mandalo su WhatsApp, salvalo nelle Foto o in un'altra app.",
+  "sticker.copy": "Copia",
+  "sticker.copyHint": "Poi incollalo in una chat qualsiasi.",
+  "sticker.copied": "Sticker copiato: incollalo in una chat",
+  "sticker.remove": "Togli dai miei sticker",
+  "sticker.fail": "Non riesco a preparare lo sticker. Controlla la connessione.",
   "src.mine": "I miei",
   "src.stickers": "Sticker GIPHY",
   "src.gifs": "GIF",

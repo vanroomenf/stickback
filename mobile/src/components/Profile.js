@@ -5,6 +5,7 @@ import { F, useStyles, useTheme } from "../theme.js";
 import { t, tn } from "../i18n/index.js";
 import { Avatar, BackIcon, MenuIcon, MoreIcon, PasteIcon, PlusIcon, Primary, Secondary, Sheet, StarIcon, StickerCard, StickerImage } from "./ui.js";
 import * as api from "../lib/api.js";
+import { copySticker, shareSticker } from "../lib/share.js";
 import { orderReplies } from "../store.js";
 
 // What we last loaded for each profile, shown at once next time while fresh data arrives
@@ -38,6 +39,18 @@ export default memo(function Profile({ me: myName, user, users, problems, myStic
   }), [user]);
   const [busy, setBusy] = useState(false);
   const [list, setList] = useState(null); // { kind, people: null | [...] }
+  const [picked, setPicked] = useState(null); // the sticker you tapped in your collection
+  const [working, setWorking] = useState(null); // "share" | "copy" while preparing the file
+  const sendOut = async (how) => {
+    const sk = picked;
+    setWorking(how);
+    try {
+      if (how === "share") await shareSticker(sk);
+      else { await copySticker(sk); say?.(t("sticker.copied")); setPicked(null); }
+    } catch (e) {
+      if (!/cancel|dismiss|abort/i.test(String(e?.message))) say?.(t("sticker.fail"));
+    } finally { setWorking(null); }
+  };
   const reloadCounts = useCallback(() => {
     if (uid) api.loadCounts(uid).then(setCounts).catch(() => {});
   }, [uid, setCounts]);
@@ -186,18 +199,35 @@ export default memo(function Profile({ me: myName, user, users, problems, myStic
               <PasteIcon color={C.fg} />
               <Text style={st.addTxt}>{t("profile.paste")}</Text>
             </Pressable>
-            {myStickers.map((sk) => (
-              <View key={sk.v} style={[st.tile, { width: tile, height: tile }]}>
+            {myStickers.map((sk, i) => (
+              <Pressable key={sk.v} style={({ pressed }) => [st.tile, { width: tile, height: tile }, pressed && { opacity: 0.7 }]}
+                onPress={() => setPicked(sk)} accessibilityRole="button" accessibilityLabel={t("sticker.open", { n: i + 1 })}>
                 <StickerImage sticker={sk} thumb style={{ width: "80%", height: "80%" }} />
-                <Pressable style={st.rm} hitSlop={8} onPress={() => onRemoveSticker(sk)} accessibilityRole="button" accessibilityLabel={t("feed.unsave")}>
-                  <Text style={st.rmTxt}>×</Text>
-                </Pressable>
-              </View>
+              </Pressable>
             ))}
           </View>
           <Text style={st.note}>{t("profile.note")}</Text>
         </>
       )}
+
+      <Sheet visible={!!picked} title={t("sticker.title")} onClose={() => setPicked(null)}>
+        {picked && (
+          <View style={{ gap: 14 }}>
+            <View style={st.bigSticker}><StickerImage sticker={picked} style={{ width: 180, height: 180 }} /></View>
+            <View style={{ gap: 6 }}>
+              <Primary label={working === "share" ? t("wait") : t("sticker.share")} onPress={() => sendOut("share")} disabled={!!working} />
+              <Text style={st.hintCenter}>{t("sticker.shareHint")}</Text>
+            </View>
+            <View style={{ gap: 6 }}>
+              <Secondary label={working === "copy" ? t("wait") : t("sticker.copy")} onPress={() => sendOut("copy")} style={{ minHeight: 48, borderRadius: 999 }} />
+              <Text style={st.hintCenter}>{t("sticker.copyHint")}</Text>
+            </View>
+            <Pressable onPress={() => { const sk = picked; setPicked(null); onRemoveSticker(sk); }} style={st.removeRow} accessibilityRole="button">
+              <Text style={st.removeTxt}>{t("sticker.remove")}</Text>
+            </Pressable>
+          </View>
+        )}
+      </Sheet>
 
       <Sheet visible={!!list} title={list ? t(list.kind === "followers" ? "profile.followersOf" : "profile.followedBy", { user }) : ""} onClose={() => setList(null)}>
         {list?.people === null ? <ActivityIndicator color={C.muted} style={{ paddingVertical: 20 }} />
@@ -250,5 +280,9 @@ const makeStyles = (C) => ({
   rm: { position: "absolute", top: 6, right: 6, width: 24, height: 24, borderRadius: 12, backgroundColor: C.fg, alignItems: "center", justifyContent: "center" },
   rmTxt: { color: C.bg, fontSize: 16, lineHeight: 18, fontFamily: F.bold },
   note: { color: C.muted, fontFamily: F.body, fontSize: 13, lineHeight: 19 },
+  bigSticker: { alignSelf: "center", width: 220, height: 220, borderRadius: 28, backgroundColor: C.raised, alignItems: "center", justifyContent: "center" },
+  hintCenter: { color: C.muted, fontFamily: F.body, fontSize: 13, textAlign: "center" },
+  removeRow: { minHeight: 48, alignItems: "center", justifyContent: "center" },
+  removeTxt: { color: C.danger, fontFamily: F.semi, fontSize: 15 },
   empty: { color: C.muted, fontFamily: F.body, fontSize: 15, lineHeight: 22, textAlign: "center", paddingVertical: 32 },
 });

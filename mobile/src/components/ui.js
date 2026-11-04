@@ -168,6 +168,10 @@ const captionSize = (text = "") =>
 // ───────── Sheets, toasts, buttons ─────────
 // Bottom sheet: the page behind only dims, the sheet slides up on its own and follows your finger.
 // Drag the top (handle and title) down to close it, or tap outside.
+// iOS can't show a sheet while another one is still sliding away: the next one waits for it
+let closingUntil = 0;
+const CLOSE_MS = 200;
+
 export function Sheet({ visible, title, onClose, children }) {
   const insets = useSafeAreaInsets();
   const st = useStyles(sheetStyles);
@@ -193,11 +197,15 @@ export function Sheet({ visible, title, onClose, children }) {
   // close: slide it away, then take it off screen
   useEffect(() => {
     if (visible) {
-      setMounted(true);
+      const wait = Math.max(0, closingUntil - Date.now());
+      if (!wait) { setMounted(true); return; }
+      const tm = setTimeout(() => setMounted(true), wait + 30);
+      return () => clearTimeout(tm);
     } else if (mounted) {
+      closingUntil = Date.now() + CLOSE_MS;
       Animated.parallel([
         Animated.timing(fade, { toValue: 0, duration: 180, useNativeDriver: true }),
-        Animated.timing(y, { toValue: height.current, duration: 200, useNativeDriver: true }),
+        Animated.timing(y, { toValue: height.current, duration: CLOSE_MS, useNativeDriver: true }),
       ]).start(({ finished }) => { if (finished) setMounted(false); });
     }
   }, [visible]); // eslint-disable-line react-hooks/exhaustive-deps
