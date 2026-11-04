@@ -497,7 +497,7 @@ export default function StickbackApp({ userId }) {
 
       <ReplySheet visible={!!replyTo} problem={replyTo} myStickers={myStickers} lastAdded={lastAdded} onClose={close}
         onPublish={(r) => publishReply(replyTo.id, r)} onAddStickers={() => fromGallery({ kind: "reply", pid: replyTo.id })} onPaste={fromClipboard} />
-      {maker && <StickerMaker source={maker} onCancel={makerCancel} onDone={makerDone} />}
+      {maker && <StickerMaker source={maker} myStickers={myStickers.filter((s) => !s.example)} onCancel={makerCancel} onDone={makerDone} />}
       <ProblemSheet visible={sheet?.kind === "problem"} onClose={close} onPublish={publishProblem} />
       <MoreSheet target={more} me={me} onClose={() => setMore(null)}
         onReport={() => { setReportTarget(more); setMore(null); }}
