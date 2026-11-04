@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { searchGiphy } from "../lib/giphy.js";
 import { categories } from "../lib/api.js";
@@ -68,7 +68,13 @@ export function ReplySheet({ visible, problem, myStickers, lastAdded, onClose, o
   const [sticker, setSticker] = useState(myStickers[0]);
   const [src, setSrc] = useState("mine");
 
-  useEffect(() => { if (visible) { setCaption(""); setSrc("mine"); setSticker((s) => s || myStickers[0]); } }, [visible]); // eslint-disable-line react-hooks/exhaustive-deps
+  // a new problem starts empty; coming back to the same one (e.g. after making a sticker) keeps your text
+  const lastPid = useRef(null);
+  useEffect(() => {
+    if (!visible) return;
+    if (problem?.id !== lastPid.current) { setCaption(""); setSrc("mine"); lastPid.current = problem?.id; }
+    setSticker((s) => s || myStickers[0]);
+  }, [visible]); // eslint-disable-line react-hooks/exhaustive-deps
   // A sticker you just added becomes the selected one
   useEffect(() => { if (lastAdded) { setSticker(lastAdded); setSrc("mine"); } }, [lastAdded]);
 
@@ -77,7 +83,11 @@ export function ReplySheet({ visible, problem, myStickers, lastAdded, onClose, o
   const chip = 52;
   const text = caption.trim();
   const current = sticker || myStickers[0];
-  const publish = () => { if (text && current) onPublish({ id: previewId, sticker: current, caption: text }); };
+  const publish = () => {
+    if (!text || !current) return;
+    onPublish({ id: previewId, sticker: current, caption: text });
+    lastPid.current = null; // next time starts empty
+  };
 
   return (
     <Sheet visible={visible} title={t("reply.title")} onClose={onClose}>

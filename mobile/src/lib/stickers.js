@@ -27,6 +27,19 @@ async function shrink(uri, width, height) {
 
 // Pick stickers from the phone's gallery. Small GIF and WebP files are kept as they are,
 // so animated stickers keep moving.
+// One photo for the sticker maker. Animated GIF/WebP skip the maker (it would freeze them):
+// returns { sticker } for those, { image: { uri, width, height } } for the rest, or null if cancelled.
+export async function pickPhoto() {
+  const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], allowsMultipleSelection: false, base64: true, quality: 1 });
+  if (res.canceled || !res.assets?.length) return null;
+  const a = res.assets[0];
+  const mime = a.mimeType || "";
+  if ((mime === "image/gif" || mime === "image/webp") && a.base64 && (a.fileSize || 0) < 800_000) {
+    return { sticker: { type: "img", v: `data:${mime};base64,${a.base64}` } };
+  }
+  return { image: { uri: a.uri, width: a.width, height: a.height } };
+}
+
 export async function pickStickers() {
   const res = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: ["images"],

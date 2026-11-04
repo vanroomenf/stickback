@@ -4,7 +4,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { initialState, reducer } from "./store.js";
 import * as api from "./lib/api.js";
 import { supabase } from "./lib/supabase.js";
-import { pasteSticker, pickStickers } from "./lib/stickers.js";
+import { pasteSticker, pickPhoto } from "./lib/stickers.js";
+import StickerMaker from "./components/StickerMaker.js";
 import { nextId } from "./lib/util.js";
 import { F, useStyles, useTheme } from "./theme.js";
 import Feed from "./components/Feed.js";
@@ -151,14 +152,26 @@ export default function StickbackApp({ userId }) {
     setLastAdded(saved[saved.length - 1]);
     say(msg || tn("toast.stickersAdded", saved.length));
   };
-  const fromGallery = async () => {
-    try {
-      const stickers = await pickStickers();
-      if (stickers.length) await addStickers(stickers);
-    } catch {
-      say(t("toast.galleryFail"));
-    }
+  // + : pick a photo and turn it into a sticker. From the reply sheet, that sheet closes while you
+  // make the sticker (iPhone shows one window at a time) and comes back with the new sticker selected.
+  const [maker, setMaker] = useState(null); // { uri, width, height, returnTo }
+  const backTo = (r) => { if (r) setTimeout(() => setSheet(r), 320); };
+  const fromGallery = async (returnTo = null) => {
+    if (returnTo) { setSheet(null); await new Promise((ok) => setTimeout(ok, 280)); }
+    let picked = null;
+    try { picked = await pickPhoto(); } catch { say(t("toast.galleryFail")); }
+    if (!picked) { backTo(returnTo); return; }
+    if (picked.sticker) { await addStickers([picked.sticker]); backTo(returnTo); return; }
+    setMaker({ ...picked.image, returnTo });
   };
+  const makerDone = async (sticker) => {
+    const r = maker?.returnTo;
+    setMaker(null);
+    if (sticker) await addStickers([sticker], t("toast.stickerCreated"));
+    else say(t("toast.stickerSaveFail"));
+    backTo(r);
+  };
+  const makerCancel = () => { const r = maker?.returnTo; setMaker(null); backTo(r); };
   const fromClipboard = async () => {
     try {
       const st = await pasteSticker();
@@ -483,7 +496,8 @@ export default function StickbackApp({ userId }) {
       <Toast toast={toast} />
 
       <ReplySheet visible={!!replyTo} problem={replyTo} myStickers={myStickers} lastAdded={lastAdded} onClose={close}
-        onPublish={(r) => publishReply(replyTo.id, r)} onAddStickers={fromGallery} onPaste={fromClipboard} />
+        onPublish={(r) => publishReply(replyTo.id, r)} onAddStickers={() => fromGallery({ kind: "reply", pid: replyTo.id })} onPaste={fromClipboard} />
+      {maker && <StickerMaker source={maker} onCancel={makerCancel} onDone={makerDone} />}
       <ProblemSheet visible={sheet?.kind === "problem"} onClose={close} onPublish={publishProblem} />
       <MoreSheet target={more} me={me} onClose={() => setMore(null)}
         onReport={() => { setReportTarget(more); setMore(null); }}
