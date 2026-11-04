@@ -5,6 +5,7 @@ import * as Clipboard from "expo-clipboard";
 import * as Sharing from "expo-sharing";
 import { File, Paths } from "expo-file-system";
 import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
+import { copyStickerFile, hasNative } from "../../modules/stickback-native/index.js";
 
 const MIME = { gif: "image/gif", webp: "image/webp", png: "image/png", jpg: "image/jpeg" };
 const extOf = (url) => {
@@ -39,6 +40,8 @@ export async function copySticker(sticker) {
     return;
   }
   const { file } = await download(sticker);
+  // installed app: a real transparent PNG on the clipboard (Expo Go can only copy a flat picture)
+  if (hasNative) { await copyStickerFile(file.uri); return; }
   const rendered = await ImageManipulator.manipulate(file.uri).renderAsync();
   const png = await rendered.saveAsync({ format: SaveFormat.PNG, base64: true });
   await Clipboard.setImageAsync(png.base64);

@@ -191,3 +191,10 @@ Migrazione `supabase/migrations/0007_follows.sql` (si può eseguire anche se una
 - **Condividi → Stickback anche su iPhone**: con una Share Extension nell'app nativa.
 - **Esportare gli sticker su WhatsApp**: WhatsApp accetta pacchetti di sticker solo da app native (iOS e Android), con almeno 3 sticker per pacchetto in formato WEBP 512×512 e un'icona del pacchetto. Stickback potrà creare un pacchetto con i tuoi sticker e aggiungerlo a WhatsApp con un tocco.
 - **Chiave GIPHY SDK** per usare la finestra di ricerca già pronta di GIPHY.
+
+## App installata su iPhone (Xcode, gratis)
+
+`mobile/modules/stickback-native` è un piccolo modulo nativo per iPhone: ritaglio automatico del soggetto (iOS 17+) e copia degli sticker come PNG trasparente. Funziona solo nell'app installata (non in Expo Go, dove l'app usa il modo normale).
+
+Prima installazione, dal Mac con l'iPhone collegato: `cd mobile && npm install && npx expo run:ios --device`.
+Dopo: `npx expo start --dev-client --tunnel` e apri l'app Stickback sul telefono. Serve rifare `run:ios` solo quando cambia il codice nativo.

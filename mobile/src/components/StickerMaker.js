@@ -5,7 +5,7 @@
 //   Add     – emoji or one of your stickers on top, same gestures
 //   Draw    – draw with your finger, in colour
 // Undo takes back the last change. The result is a transparent 512×512 picture saved to your stickers.
-// Automatic subject cutout (like Photos) needs the installed app and comes with the native build.
+// Subject – automatic cutout of the person/pet/object (like Photos), only in the installed iPhone app (iOS 17+).
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { Animated, Image, Modal, PanResponder, Platform, Pressable, ScrollView, Text, TextInput, View, useWindowDimensions } from "react-native";
 import MaskedView from "@react-native-masked-view/masked-view";
@@ -16,10 +16,12 @@ import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
 import { t } from "../i18n/index.js";
 import { F, useStyles, useTheme } from "../theme.js";
 import { StickerImage } from "./ui.js";
+import { canCutOut, cutOutSubject } from "../../modules/stickback-native/index.js";
 
 const WEB = Platform.OS === "web";
 // heart and star need a real mask, which only exists on the phone
-const SHAPES = WEB ? ["circle", "rounded", "whole"] : ["circle", "rounded", "heart", "star", "whole"];
+const CUT = canCutOut();
+const SHAPES = WEB ? ["circle", "rounded", "whole"] : [...(CUT ? ["subject"] : []), "circle", "rounded", "heart", "star", "whole"];
 const TOOLS = ["cutout", "text", "add", "draw"];
 const COLORS = ["#FFFFFF", "#111111", "#F0441F", "#FFC53D", "#34C759", "#2F80ED", "#FF5FA2", "#8E5CFF"];
 const WIDTHS = [4, 8, 14];
@@ -76,6 +78,10 @@ export default function StickerMaker({ source, myStickers = [], onCancel, onDone
   const [history, setHistory] = useState([]);
   const [busy, setBusy] = useState(false);
   const [capturing, setCapturing] = useState(false);
+  const [cut, setCut] = useState(null); // the cut-out subject of this photo, once found
+  const [cutting, setCutting] = useState(false);
+  const [cutMsg, setCutMsg] = useState(null);
+  useEffect(() => { setCut(null); setCutMsg(null); }, [source]);
   const shot = useRef(null);
 
   // Every change goes through here so Undo can take it back (reads the latest state, also from gesture handlers)
@@ -169,12 +175,28 @@ export default function StickerMaker({ source, myStickers = [], onCancel, onDone
   const sel = layers.find((l) => l.id === selected) ?? null;
   const selText = sel?.kind === "text" ? sel : null;
 
+  const pickShape = async (k) => {
+    setCutMsg(null);
+    if (k !== "subject" || cut) { snapshot(); setShape(k); return; }
+    setCutting(true);
+    try {
+      const r = await cutOutSubject(source.uri);
+      if (r?.found) { setCut(r); snapshot(); setShape("subject"); pos.setValue({ x: 0, y: 0 }); zoom.setValue(1); Object.assign(g, { x: 0, y: 0, z: 1 }); }
+      else setCutMsg(t("maker.noSubject"));
+    } catch { setCutMsg(t("maker.noSubject")); }
+    finally { setCutting(false); }
+  };
+
   if (!source) return null;
 
   // The photo fills the shape (cover); "whole" shows all of it (contain)
-  const whole = shape === "whole";
-  const inner = whole ? S : S * 0.86;
-  const ratio = source.width && source.height ? source.width / source.height : 1;
+  const subject = shape === "subject" && !!cut;
+  const whole = shape === "whole" || subject;
+  const inner = shape === "whole" ? S : subject ? S * 0.94 : S * 0.86;
+  const pic = subject
+    ? (outline ? { uri: cut.outlinedUri, width: cut.outlinedWidth, height: cut.outlinedHeight } : { uri: cut.uri, width: cut.width, height: cut.height })
+    : source;
+  const ratio = pic.width && pic.height ? pic.width / pic.height : 1;
   const imgW = whole ? (ratio >= 1 ? inner : inner * ratio) : (ratio >= 1 ? inner * ratio : inner);
   const imgH = whole ? (ratio >= 1 ? inner / ratio : inner) : (ratio >= 1 ? inner : inner / ratio);
   const border = outline && !whole ? S * 0.04 : 0;
@@ -182,7 +204,7 @@ export default function StickerMaker({ source, myStickers = [], onCancel, onDone
   const photo = (
     <View style={{ width: inner, height: inner, alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
       <Animated.View style={{ transform: [{ translateX: pos.x }, { translateY: pos.y }, { scale: zoom }] }}>
-        <Image source={{ uri: source.uri }} style={{ width: imgW, height: imgH }} resizeMode="cover" />
+        <Image source={{ uri: pic.uri }} style={{ width: imgW, height: imgH }} resizeMode="cover" />
       </Animated.View>
     </View>
   );
@@ -277,14 +299,15 @@ export default function StickerMaker({ source, myStickers = [], onCancel, onDone
         <ScrollView style={{ flex: 1 }} contentContainerStyle={st.panel} keyboardShouldPersistTaps="handled">
           {tool === "cutout" && (
             <>
-              <View style={st.chips}>{SHAPES.map((k) => chip(shape === k, t(`maker.${k}`), () => { snapshot(); setShape(k); }, k))}</View>
-              {!whole && <View style={st.chips}>{chip(outline, t("maker.outline"), () => { snapshot(); setOutline(!outline); })}</View>}
+              <View style={st.chips}>{SHAPES.map((k) => chip(shape === k, k === "subject" && cutting ? t("maker.cutting") : t(`maker.${k}`), () => pickShape(k), k))}</View>
+              {cutMsg && <Text style={st.soon}>{cutMsg}</Text>}
+              {(!whole || subject) && <View style={st.chips}>{chip(outline, t("maker.outline"), () => { snapshot(); setOutline(!outline); })}</View>}
               <View style={st.zoomRow}>
                 <Text style={st.hint}>{t("maker.hint")}</Text>
                 <Pressable onPress={() => step(1 / 1.15)} style={st.zoomBtn} accessibilityRole="button" accessibilityLabel={t("maker.zoomOut")}><Text style={st.zoomTxt}>−</Text></Pressable>
                 <Pressable onPress={() => step(1.15)} style={st.zoomBtn} accessibilityRole="button" accessibilityLabel={t("maker.zoomIn")}><Text style={st.zoomTxt}>+</Text></Pressable>
               </View>
-              <Text style={st.soon}>{t("maker.subjectSoon")}</Text>
+              {!CUT && !WEB && <Text style={st.soon}>{t("maker.subjectSoon")}</Text>}
             </>
           )}
 
