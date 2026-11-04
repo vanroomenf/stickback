@@ -196,5 +196,5 @@ Migrazione `supabase/migrations/0007_follows.sql` (si può eseguire anche se una
 
 `mobile/modules/stickback-native` è un piccolo modulo nativo per iPhone: ritaglio automatico del soggetto (iOS 17+) e copia degli sticker come PNG trasparente. Funziona solo nell'app installata (non in Expo Go, dove l'app usa il modo normale).
 
-Prima installazione, dal Mac con l'iPhone collegato: `cd mobile && npm install && npx expo run:ios --device`.
+Prima installazione, dal Mac con l'iPhone collegato: `cd mobile && npm install && STICKBACK_FREE=1 npx expo run:ios --device` (`STICKBACK_FREE=1` toglie le notifiche push, che l'account Apple gratuito non permette).
 Dopo: `npx expo start --dev-client --tunnel` e apri l'app Stickback sul telefono. Serve rifare `run:ios` solo quando cambia il codice nativo.
