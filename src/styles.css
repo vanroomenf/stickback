@@ -1,12 +1,16 @@
 /* Layout: phone column = views (feed with vertical snap / profile scroll) + bottom tab bar */
 :root{
-  --page:#0f0d14; --bg:#1a1622; --surface:#262030; --line:#3a3245;
-  --fg:#f5f1fb; --muted:#a59cb5; --accent:#ffd23f; --accent-ink:#1a1622;
-  --display:'Bricolage Grotesque','Arial Black',system-ui,sans-serif;
-  --meme:'Anton',Impact,'Arial Narrow Bold',sans-serif;
-  --body:'Figtree',system-ui,-apple-system,sans-serif;
-  color-scheme:dark;
+  --page:#EFE6DE; --bg:#FFF8F2; --surface:#FFFFFF; --raised:#F4ECE5; --line:rgba(30,22,17,.1);
+  --fg:#1E1611; --muted:#6F625A; --accent:#F0441F; --accent-ink:#FFFFFF;
+  --display:'Onest',system-ui,sans-serif;
+  --meme:'Onest',system-ui,sans-serif;
+  --body:'Onest',system-ui,-apple-system,sans-serif;
+  color-scheme:light dark;
 }
+@media (prefers-color-scheme:dark){:root{
+  --page:#0B0908; --bg:#15120F; --surface:#201B18; --raised:#2B2521; --line:rgba(255,240,230,.11);
+  --fg:#F7EFE9; --muted:#A89990; --accent:#FF6A45; --accent-ink:#1A0B05;
+}}
 [hidden]{display:none!important}
 #root{display:contents}
 img{max-width:100%}
@@ -217,3 +221,89 @@ img.sticker.gif{transform:none;filter:none}
   body{padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
   .app{max-width:none;max-height:none;border-radius:0;box-shadow:none}
 }
+
+/* ───────── New look (same as the app): Onest, a soft colour per problem, ink buttons ───────── */
+.screen{--cbg:#FFE2CC;--cfg:#2A1308;--cmu:#7A4A33;background:var(--cbg);color:var(--cfg)}
+.screen:nth-child(6n+2){--cbg:#DCEBFF;--cfg:#0C1E38;--cmu:#2F5788}
+.screen:nth-child(6n+3){--cbg:#FFF0B8;--cfg:#2B2205;--cmu:#6E5A12}
+.screen:nth-child(6n+4){--cbg:#DDF6E7;--cfg:#10241C;--cmu:#2F6B4B}
+.screen:nth-child(6n+5){--cbg:#FFDDE6;--cfg:#3A0B1A;--cmu:#8A3550}
+.screen:nth-child(6n+6){--cbg:#E6DEFF;--cfg:#21153F;--cmu:#594A86}
+@media (prefers-color-scheme:dark){
+  .screen{--cbg:#2A170D;--cfg:#FFE2CC;--cmu:#D9A88C}
+  .screen:nth-child(6n+2){--cbg:#0E1B2E;--cfg:#DCEBFF;--cmu:#94B4DD}
+  .screen:nth-child(6n+3){--cbg:#262008;--cfg:#FFF0B8;--cmu:#D2BE72}
+  .screen:nth-child(6n+4){--cbg:#10241C;--cfg:#D8F5E3;--cmu:#8FC2A6}
+  .screen:nth-child(6n+5){--cbg:#2C0F18;--cfg:#FFDDE6;--cmu:#E09AAE}
+  .screen:nth-child(6n+6){--cbg:#1B1530;--cfg:#E6DEFF;--cmu:#ADA0DA}
+}
+.screen{padding-top:72px}
+.screen .pmeta,.screen .who,.screen .count,.screen .hint,.screen .win{color:var(--cmu)}
+.screen .handle,.screen .caption{color:var(--cfg)}
+.screen .avatar{background:var(--cfg);color:var(--cbg)}
+.topbar{background:none;padding:16px 20px 14px}
+.logo{font-family:var(--display);font-weight:800;font-size:23px;letter-spacing:-.04em;text-transform:lowercase;color:var(--fg)}
+.logo b{color:inherit}
+.proto{border-color:var(--line)}
+.ptext{font-family:var(--display);font-weight:700;font-size:clamp(23px,6.6vw,28px);line-height:1.18;letter-spacing:-.02em;color:var(--cfg)}
+.yours{background:none;color:var(--cmu);font-weight:500;font-size:13px;padding:0}
+.star{background:none;border:0;padding:8px 4px;color:var(--cfg,var(--fg));font-weight:600;min-height:44px}
+.star span{color:inherit}
+.star.on{background:none;color:var(--cfg,var(--fg))}
+.star.on span{color:inherit}
+.star.on svg{color:var(--accent)}
+.star.on svg path{fill:var(--accent);stroke:var(--accent)}
+.star.big{flex-direction:row;gap:7px;padding:8px 2px;font-size:15px;min-width:0}
+.meme{background:none;border:0;padding-bottom:calc(100% + 64px)}
+.meme-in{padding:0;gap:10px}
+.caption{font:600 18px/1.28 var(--body);letter-spacing:-.01em}
+.sticker{transform:none;filter:none}
+.meme.gifcard .stk{margin:0;border-radius:16px;overflow:hidden;background:rgba(0,0,0,.08)}
+.empty{border:1.5px dashed var(--cmu);color:var(--cmu)}
+.empty strong{color:var(--cfg);font-family:var(--display)}
+.cnav{background:var(--surface);color:var(--fg)}
+.savebtn{background:none;border:0;color:var(--cfg,var(--fg));width:44px;height:44px}
+.savebtn.on{background:none;color:var(--cfg,var(--fg))}
+.reply,.primary{background:var(--cfg,var(--fg));color:var(--cbg,var(--bg));border-radius:999px;padding:13px 24px;font-weight:600}
+.primary{width:100%}
+.pick{border-color:var(--cmu);color:var(--cfg)}
+.win{color:var(--cmu)}
+.tabbar{background:var(--bg);border-top:1px solid var(--line)}
+.tab{color:var(--muted)}
+.tab.on{color:var(--fg)}
+.tab .avatar{background:var(--raised);color:var(--fg)}
+.tab.on .avatar{box-shadow:0 0 0 2px var(--bg),0 0 0 3.5px var(--fg)}
+.plus{border-radius:12px;background:var(--accent);color:var(--accent-ink)}
+.avatar{background:var(--raised);color:var(--fg)}
+.bigav{background:#DCEBFF;color:#0C1E38;box-shadow:none;font-family:var(--display)}
+.pname{font-family:var(--display);font-weight:700}
+.editbtn{align-self:stretch;border:0;background:var(--raised);border-radius:12px;padding:11px;font-size:14px}
+.stats{background:none;border:0;padding:0}
+.stat b{font-family:var(--display);font-weight:700}
+.stat span{text-transform:none;letter-spacing:0;font-size:13px}
+.stat.gold b{color:var(--fg)}
+.ptabs button.on{border-color:var(--fg)}
+.pitem{background:none;border:0;border-bottom:1px solid var(--line);border-radius:0;padding:14px 0}
+.pitem .t{font-family:var(--body);font-weight:600}
+.pitem .m svg{color:var(--accent)}
+.pitem .thumbs .meme{padding-bottom:100%;box-shadow:none}
+.ritem .m .s{color:var(--accent)}
+.stile,.chip,.gitem{background:var(--raised)}
+.stile .rm{background:var(--fg);color:var(--bg)}
+.addtile,.chip.add{border:1.5px dashed var(--muted)}
+.note,.keybox{background:var(--raised)}
+.backdrop{background:rgba(30,20,14,.42)}
+.sheet{background:var(--bg);border:0;border-radius:24px 24px 0 0}
+.sheet-head h3{font-family:var(--display);font-weight:700}
+.field input,.field textarea,#gq,.keyrow input{background:var(--raised);border:0;border-radius:14px;padding:13px 14px}
+.field label,.lab{text-transform:none;letter-spacing:.02em}
+.chip.on,.gitem.on::after{border-color:var(--fg)}
+.gitem.on::after{box-shadow:inset 0 0 0 3px var(--fg)}
+.srcseg{background:var(--raised)}
+.srcseg button.on{background:var(--surface);box-shadow:none}
+.keyrow button{background:var(--fg);color:var(--bg)}
+button:focus-visible,input:focus-visible,textarea:focus-visible,label:focus-visible{outline-color:var(--fg)}
+/* removed from the app: crown / best reply and the reply count */
+.win,.pick,.stat.gold{display:none}
+.count{visibility:hidden}
+.stats{grid-template-columns:repeat(3,1fr)}

@@ -1,10 +1,11 @@
 /* Shared style for the rules and privacy pages: same palette as the app, built for reading */
 :root{
-  --bg:#1a1622; --surface:#262030; --line:#3a3245; --fg:#f5f1fb; --muted:#a59cb5; --accent:#ffd23f;
-  --display:'Bricolage Grotesque','Arial Black',system-ui,sans-serif;
-  --body:'Figtree',system-ui,-apple-system,sans-serif;
-  color-scheme:dark;
+  --bg:#FFF8F2; --surface:#FFFFFF; --line:rgba(30,22,17,.1); --fg:#1E1611; --muted:#6F625A; --accent:#C42B1C;
+  --display:'Onest',system-ui,sans-serif;
+  --body:'Onest',system-ui,-apple-system,sans-serif;
+  color-scheme:light dark;
 }
+@media (prefers-color-scheme:dark){:root{--bg:#15120F;--surface:#201B18;--line:rgba(255,240,230,.11);--fg:#F7EFE9;--muted:#A89990;--accent:#FF8A7A}}
 *{box-sizing:border-box}
 html{background:var(--bg)}
 body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.65 var(--body);
@@ -12,18 +13,18 @@ body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.65 var(--body);
 main{max-width:680px;margin:0 auto}
 .logo{font:800 22px var(--display);letter-spacing:-.02em;color:var(--fg);text-decoration:none}
 .logo b{color:var(--accent)}
-h1{font:800 clamp(30px,6vw,40px)/1.1 var(--display);letter-spacing:-.02em;margin:28px 0 8px;text-wrap:balance}
+h1{font:700 clamp(30px,6vw,40px)/1.1 var(--display);letter-spacing:-.02em;margin:28px 0 8px;text-wrap:balance}
 .updated{color:var(--muted);font-size:14px;margin:0 0 28px}
 .lead{font-size:18px;color:var(--fg)}
-h2{font:800 21px/1.25 var(--display);margin:36px 0 10px;text-wrap:balance}
-p,li{color:#ddd6e8}
+h2{font:700 21px/1.25 var(--display);margin:36px 0 10px;text-wrap:balance}
+p,li{color:var(--fg)}
 ul{padding-left:1.2em}
 li{margin:6px 0}
 strong{color:var(--fg)}
 a{color:var(--accent)}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin:18px 0}
 .card p{margin:6px 0}
-.todo{background:#4a3a12;color:#ffe9a8;border-radius:6px;padding:1px 6px;font-weight:600}
+.todo{background:#FFE2CC;color:#2A1308;border-radius:6px;padding:1px 6px;font-weight:600}
 table{width:100%;border-collapse:collapse;font-size:15px}
 .tablewrap{overflow-x:auto;margin:12px 0}
 th,td{text-align:left;vertical-align:top;padding:10px 12px;border-bottom:1px solid var(--line)}
@@ -34,3 +35,5 @@ footer{margin-top:48px;color:var(--muted);font-size:14px}
 .langs b{color:var(--fg)}
 .langs a{color:var(--muted);text-decoration:none;padding:4px 2px}
 .langs a:hover{color:var(--accent)}
+.logo{text-transform:lowercase}.logo b{color:inherit}
+h1,h2{font-weight:700}
