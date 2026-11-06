@@ -43,7 +43,8 @@
       ],
       "expo-localization",
       "expo-notifications",
-      "expo-sharing"
+      "expo-sharing",
+      "./plugins/expo-from-source.js"
     ],
     "scheme": "stickback",
     "backgroundColor": "#FFF8F2",
